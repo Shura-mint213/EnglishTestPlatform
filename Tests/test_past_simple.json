@@ -1,0 +1,20 @@
+﻿{
+  "testTitle": "Past Simple Test",
+  "questions": [
+    {
+      "$type": "multiple_choice",
+      "type": "multiple_choice",
+      "text": "I ___ to London last year.",
+      "options": [ "went", "have gone", "go", "was going" ],
+      "correct": "went",
+      "explanation": "Last year указывает на Past Simple"
+    },
+    {
+      "$type": "fill_in",
+      "type": "fill_in",
+      "text": "She ___ (to be) happy yesterday.",
+      "correct": "was",
+      "explanation": "yesterday → Past Simple, she → was"
+    }
+  ]
+}

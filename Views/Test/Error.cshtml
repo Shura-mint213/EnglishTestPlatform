@@ -1,0 +1,18 @@
+﻿@{
+    ViewData["Title"] = "Ошибка загрузки теста";
+}
+
+<div class="container mt-5">
+    <div class="alert alert-danger">
+        <h3>❌ Ошибка загрузки теста</h3>
+        <p>@ViewBag.Error</p>
+        <hr />
+        <p><strong>Возможные причины:</strong></p>
+        <ul>
+            <li>Файл теста не найден в папке <code>Tests/</code></li>
+            <li>Неправильная структура JSON</li>
+            <li>Опечатка в имени файла</li>
+        </ul>
+        <a href="@Url.Action("Index", "Home")" class="btn btn-primary">Вернуться к списку тестов</a>
+    </div>
+</div>

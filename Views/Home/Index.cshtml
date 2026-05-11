@@ -1,0 +1,56 @@
+﻿@model List<string>
+@{
+    ViewData["Title"] = "Выбор теста";
+}
+<div class="container mt-5">
+    <h1 class="mb-4">📚 Тесты по английскому языку</h1>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-warning">
+            ⚠️ Нет доступных тестов. Добавьте JSON-файлы в папку <code>Tests/</code>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var test in Model)
+            {
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">@test.Replace("_", " ").Replace("test", "", StringComparison.OrdinalIgnoreCase).Trim()</h5>
+                            <p class="card-text text-muted">Файл: @test</p>
+                            <a href="@Url.Action("Take", "Test", new { testName = test })" class="btn btn-primary">Начать тест</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="mt-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6>📁 Как добавить новый тест:</h6>
+                <ol class="small">
+                    <li>Создайте JSON-файл в папке <code>/Tests/</code></li>
+                    <li>Используйте структуру из примера ниже</li>
+                    <li>Обновите страницу</li>
+                </ol>
+                <pre class="small bg-white p-2 border rounded"><code>{
+  "testTitle": "Название теста",
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "text": "Вопрос",
+      "options": ["Ответ1", "Ответ2"],
+      "correct": "Ответ1",
+      "explanation": "Пояснение"
+    }
+  ]
+}</code></pre>
+            </div>
+        </div>
+    </div>
+</div>

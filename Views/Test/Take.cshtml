@@ -1,0 +1,74 @@
+﻿@model EnglishTestPlatform.Models.TestModel
+@{
+    ViewData["Title"] = Model.TestTitle;
+    var testName = ViewBag.TestName as string;
+}
+
+<div class="container mt-4">
+    <h2>@Model.TestTitle</h2>
+    <form id="testForm">
+        @for (int i = 0; i < Model.Questions.Count; i++)
+        {
+            var q = Model.Questions[i];
+            <div class="card mb-3 question-card" data-index="@i" data-type="@q.Type">
+                <div class="card-header">
+                    <strong>Вопрос @(i + 1):</strong> @q.Text
+                </div>
+                <div class="card-body">
+                    @switch (q)
+                    {
+                        case EnglishTestPlatform.Models.MultipleChoiceQuestion mcq:
+                            foreach (var opt in mcq.Options)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="q_@i" value="@opt" />
+                                    <label class="form-check-label">@opt</label>
+                                </div>
+                            }
+                            break;
+                        case EnglishTestPlatform.Models.MultipleSelectQuestion msq:
+                            foreach (var opt in msq.Options)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="q_@i" value="@opt" />
+                                    <label class="form-check-label">@opt</label>
+                                </div>
+                            }
+                            break;
+                        case EnglishTestPlatform.Models.MatchingQuestion mq:
+                            <div class="matching-container" data-pairs='@System.Text.Json.JsonSerializer.Serialize(mq.Pairs)'>
+                                @foreach (var pair in mq.Pairs)
+                                {
+                                    <div class="row mb-2">
+                                        <div class="col-5">@pair.Left</div>
+                                        <div class="col-7">
+                                            <select class="form-select matching-select" data-left="@pair.Left">
+                                                <option value="">-- Выберите соответствие --</option>
+                                                @foreach (var target in mq.Pairs.Select(p => p.Right))
+                                                {
+                                                    <option value="@target">@target</option>
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            break;
+                        case EnglishTestPlatform.Models.FillInQuestion fiq:
+                            <input type="text" class="form-control fill-input" placeholder="Введите ответ..." />
+                            break;
+                    }
+                </div>
+            </div>
+        }
+        <button type="button" id="submitBtn" class="btn btn-success">Завершить тест</button>
+    </form>
+</div>
+
+@section Scripts {
+    <script src="~/js/test.js"></script>
+    <script>
+        // Передаём имя теста в JS
+        window.testName = "@testName";
+    </script>
+}

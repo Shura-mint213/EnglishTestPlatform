@@ -1,0 +1,142 @@
+﻿{
+  "testTitle": "Артикли в английском языке",
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "text": "This is ___ book that I told you about.",
+      "options": [ "a", "an", "the", "-" ],
+      "correct": "the",
+      "explanation": "Используется определенный артикль 'the', потому что речь идет о конкретной книге, о которой уже говорили."
+    },
+    {
+      "type": "multiple_choice",
+      "text": "She wants to become ___ engineer.",
+      "options": [ "a", "an", "the", "-" ],
+      "correct": "an",
+      "explanation": "Перед словом 'engineer', которое начинается с гласного звука, используется артикль 'an'."
+    },
+    {
+      "type": "multiple_choice",
+      "text": "I usually have ___ breakfast at 8 AM.",
+      "options": [ "a", "an", "the", "-" ],
+      "correct": "-",
+      "explanation": "С приемами пищи (breakfast, lunch, dinner) артикль обычно не используется."
+    },
+    {
+      "type": "multiple_choice",
+      "text": "___ sun rises in the east.",
+      "options": [ "A", "An", "The", "-" ],
+      "correct": "The",
+      "explanation": "С уникальными объектами (солнце, луна, мир) используется определенный артикль 'the'."
+    },
+    {
+      "type": "multiple_choice",
+      "text": "He is ___ honest man.",
+      "options": [ "a", "an", "the", "-" ],
+      "correct": "an",
+      "explanation": "Слово 'honest' начинается с немого 'h' и звучит как гласный, поэтому используется 'an'."
+    },
+    {
+      "type": "multiple_select",
+      "text": "В каких случаях используется артикль 'the'?",
+      "options": [
+        "С уникальными объектами",
+        "С существительными во множественном числе в общем смысле",
+        "С объектами, о которых уже говорили",
+        "С названиями профессий",
+        "Со словами, обозначающими единственные в своем роде объекты"
+      ],
+      "correct": [
+        "С уникальными объектами",
+        "С объектами, о которых уже говорили",
+        "Со словами, обозначающими единственные в своем роде объекты"
+      ],
+      "explanation": "Артикль 'the' используется: 1) с уникальными объектами (the sun, the moon), 2) с объектами, которые уже упоминались, 3) с единственными в своем роде объектами (the world, the universe)."
+    },
+    {
+      "type": "matching",
+      "text": "Сопоставьте слова с правильными артиклями",
+      "pairs": [
+        {
+          "left": "university",
+          "right": "a"
+        },
+        {
+          "left": "hour",
+          "right": "an"
+        },
+        {
+          "left": "European country",
+          "right": "a"
+        },
+        {
+          "left": "MBA degree",
+          "right": "an"
+        },
+        {
+          "left": "one-way street",
+          "right": "a"
+        }
+      ],
+      "explanation": "Артикль 'a' используется перед словами, начинающимися с согласного звука, 'an' - перед гласным звуком. 'University' начинается с 'ju:' (согласный звук), 'hour' - с гласного, 'European' - с 'j' (согласный), 'MBA' - с гласного 'em', 'one' - с согласного 'w'."
+    },
+    {
+      "type": "fill_in",
+      "text": "I saw ___ movie last night. ___ movie was very interesting.",
+      "correct": "a The",
+      "explanation": "Первый раз упоминается неопределенный объект (a movie), второй раз - определенный (the movie)."
+    },
+    {
+      "type": "fill_in",
+      "text": "She plays ___ piano very well.",
+      "correct": "the",
+      "explanation": "С музыкальными инструментами используется определенный артикль 'the'."
+    },
+    {
+      "type": "fill_in",
+      "text": "___ Mount Everest is ___ highest mountain in the world.",
+      "correct": "- the",
+      "explanation": "С названиями гор (Mount Everest) артикль не используется, но 'highest mountain' - превосходная степень требует 'the'."
+    },
+    {
+      "type": "multiple_choice",
+      "text": "Let's go to ___ cinema tonight.",
+      "options": [ "a", "an", "the", "-" ],
+      "correct": "the",
+      "explanation": "С местами общественного пользования (cinema, theater, bank) часто используется 'the', когда речь идет об идее места, а не конкретном здании."
+    },
+    {
+      "type": "fill_in",
+      "text": "I need ___ advice from you.",
+      "correct": "-",
+      "explanation": "С неисчисляемыми существительными (advice, information, news) в общем смысле артикль не используется."
+    },
+    {
+      "type": "multiple_choice",
+      "text": "What ___ beautiful day!",
+      "options": [ "a", "an", "the", "-" ],
+      "correct": "a",
+      "explanation": "В восклицательных предложениях с 'what' используется неопределенный артикль 'a/an' перед исчисляемыми существительными."
+    },
+    {
+      "type": "multiple_select",
+      "text": "Выберите слова, перед которыми нужно использовать артикль 'an':",
+      "options": [
+        "house",
+        "apple",
+        "university",
+        "hour",
+        "European",
+        "interesting"
+      ],
+      "correct": [ "apple", "hour", "interesting" ],
+      "explanation": "'An' используется перед словами, которые начинаются с гласного звука: apple (æ), hour (aʊər - гласный), interesting (ɪ). 'University' и 'European' начинаются с согласного звука 'j', 'house' - с согласного 'h'."
+    },
+    {
+      "type": "fill_in",
+      "text": "___ cats are ___ most popular pets in ___ USA.",
+      "correct": "- the the",
+      "explanation": "'Cats' во множественном числе в общем смысле - без артикля. 'Most popular' - превосходная степень требует 'the'. 'USA' - название страны с составным названием требует 'the'."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+﻿body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.border-success {
+    border-left: 5px solid #28a745 !important;
+}
+
+.border-danger {
+    border-left: 5px solid #dc3545 !important;
+}
+
+.matching-select {
+    width: 100%;
+}

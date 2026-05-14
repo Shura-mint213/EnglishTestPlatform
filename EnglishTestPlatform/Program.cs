@@ -16,7 +16,7 @@ builder.Services.AddScoped<TestEvaluatorService>();
 
 // Определяем путь к файлу БД
 var dbPath = Path.Combine(
-    builder.Environment.ContentRootPath,,
+    builder.Environment.ContentRootPath,
     "Data",
     "mydatabase.db"
 );

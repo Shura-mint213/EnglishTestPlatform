@@ -2,136 +2,190 @@
 using EnglishTestPlatform.Models;
 using EnglishTestPlatform.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace EnglishTestPlatform.Controllers
 {
+    /// <summary>
+    /// Контроллер для управления тестами
+    /// </summary>
     public class TestController : Controller
     {
         private readonly ITestLoaderService _testLoader;
         private readonly TestEvaluatorService _evaluator;
-        private readonly IMemoryCache _cache;
 
-        public TestController(ITestLoaderService testLoader, 
-                            TestEvaluatorService evaluator,
-                            IMemoryCache cache)
+        public TestController(ITestLoaderService testLoader, TestEvaluatorService evaluator)
         {
             _testLoader = testLoader;
             _evaluator = evaluator;
-            _cache = cache;
         }
 
+        /// <summary>
+        /// Отображает страницу с вопросами теста
+        /// </summary>
+        /// <param name="testName">Имя файла теста (без расширения)</param>
+        /// <returns>Представление с вопросами теста</returns>
         [HttpGet]
         [Route("Take")]
         public IActionResult Take(string testName)
         {
-            Console.WriteLine($"Take {testName}");
+            // Проверяем, что имя теста указано
             if (string.IsNullOrEmpty(testName))
                 return RedirectToAction("Index", "Home");
 
             try
             {
+                // Загружаем тест из JSON файла
                 var test = _testLoader.LoadTest(testName);
+
+                // Передаём имя теста в представление через ViewBag
                 ViewBag.TestName = testName;
+
                 return View(test);
             }
             catch (Exception ex)
             {
-                // Логируем ошибку для отладки
+                // В случае ошибки показываем страницу с ошибкой
                 Console.WriteLine($"Ошибка загрузки теста {testName}: {ex.Message}");
                 ViewBag.Error = ex.Message;
                 return View("Error");
             }
         }
 
+        /// <summary>
+        /// Обрабатывает отправку формы с ответами пользователя
+        /// </summary>
+        /// <param name="testName">Имя теста</param>
+        /// <param name="userAnswers">Список ответов пользователя из формы</param>
+        /// <returns>Перенаправление на страницу с результатами</returns>
         [HttpPost]
-        [Route("Test/Submit")]
-        public IActionResult Submit([FromBody] SubmitRequest request)
+        [Route("Test/SubmitForm")]
+        public IActionResult SubmitForm(string testName, List<UserAnswerForm> userAnswers)
         {
-            Console.WriteLine("=== SUBMIT METHOD START ===");
-            Console.WriteLine($"Time: {DateTime.Now}");
-            Console.WriteLine($"Request content type: {Request.ContentType}");
-            Console.WriteLine($"Request method: {Request.Method}");
-
             try
             {
-                Console.WriteLine($"Submit: testName={request?.testName}");
-                Console.WriteLine(JsonSerializer.Serialize(request));
+                // Валидация входных данных
+                if (string.IsNullOrEmpty(testName))
+                    return BadRequest("Имя теста не указано");
 
-                if (request == null || string.IsNullOrEmpty(request.answersJson))
-                {
-                    Console.WriteLine("ERROR: Request is null or answersJson is empty");
+                if (userAnswers == null || userAnswers.Count == 0)
                     return BadRequest("Ответы не были получены");
-                }
 
-                Console.WriteLine("Loading test...");
-                var test = _testLoader.LoadTest(request.testName);
+                // Загружаем тест из JSON файла
+                var test = _testLoader.LoadTest(testName);
 
-                Console.WriteLine("Deserializing answers...");
-                var userAnswers = JsonSerializer.Deserialize<List<UserAnswer>>(request.answersJson);
+                // Преобразуем ответы из формы в формат, понятный evaluator'у
+                var userAnswersList = ConvertFormAnswersToUserAnswers(test, userAnswers);
 
+                // Вычисляем результат теста
+                var result = _evaluator.Evaluate(test, userAnswersList);
 
-                if (userAnswers == null)
-                {
-                    Console.WriteLine("ERROR: Failed to deserialize userAnswers");
-                    throw new InvalidOperationException("Не удалось десериализовать ответы");
-                }
+                // Сохраняем результат в TempData с уникальным ключом
+                string resultId = Guid.NewGuid().ToString();
+                string resultJson = JsonSerializer.Serialize(result);
+                TempData[resultId] = resultJson;
 
-                Console.WriteLine("Evaluating test...");
-                var result = _evaluator.Evaluate(test, userAnswers);
-
-                Console.WriteLine(JsonSerializer.Serialize(userAnswers));
-
-                // 🔥 Генерируем уникальный ключ и сохраняем в кэш
-                var cacheKey = $"test_result_{Guid.NewGuid()}";
-                _cache.Set(cacheKey, result, TimeSpan.FromMinutes(5));
-
-                Console.WriteLine($"✅ Cached with key: {cacheKey}");
-
-                // Редирект с ключом в query string
-                return RedirectToAction("Result", new
-                {
-                    testName = request.testName,
-                    cacheKey = cacheKey
-                });
+                // Перенаправляем на страницу с результатами
+                return RedirectToAction("ShowResult", new { id = resultId });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"=== ERROR IN SUBMIT ===");
-                Console.WriteLine($"Error: {ex.Message}");
-                Console.WriteLine($"Stack: {ex.StackTrace}");
+                Console.WriteLine($"Ошибка при обработке теста: {ex.Message}");
                 ViewBag.Error = ex.Message;
                 return View("Error");
             }
         }
 
+        /// <summary>
+        /// Отображает страницу с результатами теста
+        /// </summary>
+        /// <param name="id">Уникальный идентификатор результата в TempData</param>
+        /// <returns>Представление с результатами теста</returns>
         [HttpGet]
-        [Route("Test/Result")]
-        public IActionResult Result(string testName, string? cacheKey)
+        [Route("Test/ShowResult")]
+        public IActionResult ShowResult(string id)
         {
-            if (string.IsNullOrEmpty(cacheKey) ||
-                !_cache.TryGetValue(cacheKey, out ResultViewModel result))
-            {
-                Console.WriteLine("❌ Cache miss or invalid key");
+            // Проверяем, что ID указан
+            if (string.IsNullOrEmpty(id))
                 return RedirectToAction("Index", "Home");
-            }
 
-            // Опционально: удалить после прочтения (одноразовый токен)
-            //_cache.Remove(cacheKey);
+            // Извлекаем результат из TempData
+            string resultJson = TempData[id] as string;
 
-            Console.WriteLine("✅ Result loaded from cache");
+            if (string.IsNullOrEmpty(resultJson))
+                return RedirectToAction("Index", "Home");
+
+            // Удаляем результат из TempData после прочтения
+            TempData.Remove(id);
+
+            // Десериализуем результат
+            var result = JsonSerializer.Deserialize<ResultViewModel>(resultJson);
+
+            if (result == null)
+                return RedirectToAction("Index", "Home");
+
             return View("Result", result);
         }
 
-        [HttpGet]
-        [Route("Test/DebugSession")]
-        public IActionResult DebugSession()
+        /// <summary>
+        /// Преобразует ответы из формы в формат UserAnswer
+        /// </summary>
+        /// <param name="test">Модель теста</param>
+        /// <param name="formAnswers">Ответы из формы</param>
+        /// <returns>Список ответов в формате UserAnswer</returns>
+        private List<UserAnswer> ConvertFormAnswersToUserAnswers(TestModel test, List<UserAnswerForm> formAnswers)
         {
-            TempData["DebugTest"] = "Hello TempData!";
-            var test = TempData["DebugTest"] as string;
-            return Content($"TempData test: {test}");
+            var userAnswersList = new List<UserAnswer>();
+
+            foreach (var formAnswer in formAnswers)
+            {
+                // Получаем тип вопроса
+                var question = test.Questions[formAnswer.QuestionIndex];
+                object answer = null;
+
+                // В зависимости от типа вопроса формируем ответ
+                switch (question)
+                {
+                    case MultipleChoiceQuestion:
+                        // Одиночный выбор - просто строка
+                        answer = formAnswer.Answer;
+                        break;
+
+                    case MultipleSelectQuestion:
+                        // Множественный выбор - список строк
+                        answer = formAnswer.SelectedOptions ?? new List<string>();
+                        break;
+
+                    case MatchingQuestion:
+                        // Сопоставление - словарь "ключ -> значение"
+                        var matches = new Dictionary<string, string>();
+                        if (formAnswer.Matches != null)
+                        {
+                            foreach (var match in formAnswer.Matches)
+                            {
+                                if (!string.IsNullOrEmpty(match.Value))
+                                {
+                                    matches[match.Key] = match.Value;
+                                }
+                            }
+                        }
+                        answer = matches;
+                        break;
+
+                    case FillInQuestion:
+                        // Ввод текста - строка
+                        answer = formAnswer.Answer ?? "";
+                        break;
+                }
+
+                userAnswersList.Add(new UserAnswer
+                {
+                    questionIndex = formAnswer.QuestionIndex,
+                    answer = answer
+                });
+            }
+
+            return userAnswersList;
         }
     }
 }

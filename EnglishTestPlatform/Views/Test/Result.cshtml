@@ -2,72 +2,85 @@
 @{
     ViewData["Title"] = "Результаты теста";
 }
-<div class="container mt-4">
-    <h2>Результаты теста: @Model.TestTitle</h2>
-    <div class="alert alert-info">
-        <strong>Ваш результат: @Model.CorrectCount из @Model.TotalQuestions (@Model.Percentage.ToString("0")%)</strong>
-    </div>
 
-    @if (Model.QuestionResults != null && Model.QuestionResults.Any())
-    {
-        @foreach (var res in Model.QuestionResults)
+@if (Model == null)
+{
+    <div class="container mt-4">
+        <div class="alert alert-danger">
+            <h3>Ошибка загрузки результатов</h3>
+            <p>Результаты теста не найдены. Пожалуйста, пройдите тест заново.</p>
+            <a href="@Url.Action("Index", "Home")" class="btn btn-primary">Вернуться к списку тестов</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container mt-4">
+        <h2>Результаты теста: @Model.TestTitle</h2>
+        <div class="alert alert-info">
+            <strong>Ваш результат: @Model.CorrectCount из @Model.TotalQuestions (@Model.Percentage.ToString("0")%)</strong>
+        </div>
+
+        @if (Model.QuestionResults != null && Model.QuestionResults.Any())
         {
-            <div class="card mb-3 @(res.IsCorrect ? "border-success" : "border-danger")">
-                <div class="card-header">
-                    <strong>Вопрос @(Model.QuestionResults.IndexOf(res) + 1):</strong> @res.Question?.Text
-                    @if (res.IsCorrect)
-                    {
-                        <span class="badge bg-success">✅ Верно</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-danger">❌ Ошибка</span>
-                    }
+            @foreach (var res in Model.QuestionResults)
+            {
+                <div class="card mb-3 @(res.IsCorrect ? "border-success" : "border-danger")">
+                    <div class="card-header">
+                        <strong>Вопрос @(Model.QuestionResults.IndexOf(res) + 1):</strong> @res.Question?.Text
+                        @if (res.IsCorrect)
+                        {
+                            <span class="badge bg-success">✅ Верно</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">❌ Ошибка</span>
+                        }
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Ваш ответ:</strong> @(FormatAnswer(res.UserAnswer))</p>
+                        <p><strong>Правильный ответ:</strong> @(FormatAnswer(res.CorrectAnswer))</p>
+                        @if (!string.IsNullOrEmpty(res.Explanation))
+                        {
+                            <div class="alert alert-secondary">📖 Пояснение: @res.Explanation</div>
+                        }
+                    </div>
                 </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-warning">Нет результатов для отображения</div>
+        }
+
+        @if (Model.Recommendations != null && Model.Recommendations.Any())
+        {
+            <div class="card bg-light mt-3">
+                <div class="card-header">💡 Рекомендации</div>
                 <div class="card-body">
-                    <p><strong>Ваш ответ:</strong> @(FormatAnswer(res.UserAnswer))</p>
-                    <p><strong>Правильный ответ:</strong> @(FormatAnswer(res.CorrectAnswer))</p>
-                    @if (!string.IsNullOrEmpty(res.Explanation))
-                    {
-                        <div class="alert alert-secondary">📖 Пояснение: @res.Explanation</div>
-                    }
+                    <ul>
+                        @foreach (var rec in Model.Recommendations)
+                        {
+                            <li>@rec</li>
+                        }
+                    </ul>
                 </div>
             </div>
         }
-    }
-    else
-    {
-        <div class="alert alert-warning">Нет результатов для отображения</div>
-    }
-
-    @if (Model.Recommendations != null && Model.Recommendations.Any())
-    {
-        <div class="card bg-light mt-3">
-            <div class="card-header">💡 Рекомендации</div>
-            <div class="card-body">
-                <ul>
-                    @foreach (var rec in Model.Recommendations)
-                    {
-                        <li>@rec</li>
-                    }
-                </ul>
+        else
+        {
+            <div class="card bg-success mt-3 text-white">
+                <div class="card-body">
+                    🎉 Отлично! Нет ошибок для рекомендаций.
+                </div>
             </div>
-        </div>
-    }
-    else
-    {
-        <div class="card bg-success mt-3 text-white">
-            <div class="card-body">
-                🎉 Отлично! Нет ошибок для рекомендаций.
-            </div>
-        </div>
-    }
+        }
 
-    <a href="@Url.Action("Index", "Home")" class="btn btn-primary mt-3">← К списку тестов</a>
-</div>
+        <a href="@Url.Action("Index", "Home")" class="btn btn-primary mt-3">← К списку тестов</a>
+    </div>
+}
 
 @functions {
-    // Функция для форматирования ответа
     string FormatAnswer(object answer)
     {
         if (answer == null) return "не указан";

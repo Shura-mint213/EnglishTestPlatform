@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../Data/Data.csproj" Id="4b4e7cd7-b6f7-449f-a22e-e6e04c3806aa" />
+  <Project Path="EnglishTestPlatform.csproj" />
+</Solution>

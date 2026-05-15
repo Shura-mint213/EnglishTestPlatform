@@ -1,0 +1,75 @@
+﻿@model EnglishTestPlatform.Models.TestViewModel
+@{
+    ViewData["Title"] = "Создать тест";
+}
+
+<div class="container mt-4">
+    <h1>📝 Создать новый тест</h1>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6">
+            <form method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label">Название теста *</label>
+                    <input asp-for="Name" class="form-control" placeholder="Например: Past Simple Test" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                    <small class="text-muted">Введите понятное название для отображения пользователям</small>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="File" class="form-label">JSON файл теста *</label>
+                    <input asp-for="File" type="file" class="form-control" accept=".json" />
+                    <span asp-validation-for="File" class="text-danger"></span>
+                    <small class="text-muted">
+                        Загрузите JSON файл с вопросами теста.<br />
+                        Файл должен соответствовать структуре: testTitle, questions, type, options, correct и т.д.
+                    </small>
+                </div>
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-save"></i> Сохранить
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Отмена
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <strong>📋 Пример структуры JSON файла:</strong>
+                </div>
+                <div class="card-body">
+                    <pre class="small mb-0"><code>{
+  "testTitle": "Past Simple Test",
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "text": "I ___ to London last year.",
+      "options": ["went", "have gone", "go"],
+      "correct": "went",
+      "explanation": "Last year → Past Simple"
+    },
+    {
+      "type": "fill_in",
+      "text": "She ___ (to be) happy.",
+      "correct": "was",
+      "explanation": "Past Simple → was"
+    }
+  ]
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

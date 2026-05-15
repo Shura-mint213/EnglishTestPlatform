@@ -1,0 +1,41 @@
+﻿
+@model Data.Entities.Theory
+@{
+    ViewData["Title"] = Model.File.Name;
+    var htmlContent = ViewBag.HtmlContent as string;
+    var relatedTests = ViewBag.RelatedTests as List<Data.Entities.Test>;
+}
+<div class="container mt-4">
+    <h1>@Model.File.Name</h1>
+    <div class="markdown-body">
+        @Html.Raw(htmlContent)
+    </div>
+
+    @if (relatedTests != null && relatedTests.Any())
+    {
+        <hr />
+        <h3>📝 Пройти тест по этой теме:</h3>
+        <div class="row">
+            @foreach (var test in relatedTests)
+            {
+                <div class="col-md-4 mb-2">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">@test.File.Name</h5>
+                            <a href="@Url.Action("Take", "Test", new { testName = @test.File.Name })"
+                               class="btn btn-success">Начать тест</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-secondary mt-3">
+            К этому материалу пока не привязано ни одного теста.
+        </div>
+    }
+
+    <a href="@Url.Action("Index")" class="btn btn-secondary mt-3">← Назад к списку</a>
+</div>

@@ -65,3 +65,19 @@ publish/
 
 bin/
 obj/
+source/
+
+# ====================
+# SQLite Database Files
+# ====================
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+
+**/Data/*.db
+**/Data/*.db-shm
+**/Data/*.db-wal

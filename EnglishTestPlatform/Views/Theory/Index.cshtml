@@ -1,0 +1,28 @@
+﻿@model List<Data.Entities.Theory>
+@{
+    ViewData["Title"] = "Теоретические материалы";
+}
+<div class="container mt-4">
+    <h1>📚 Теоретические материалы</h1>
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">Пока нет добавленных материалов.</div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var theory in Model)
+            {
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">@theory.File.Name</h5>
+                            <a href="@Url.Action("Details", "Theory", new { id = theory.Id })"
+                               class="btn btn-primary">Читать</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

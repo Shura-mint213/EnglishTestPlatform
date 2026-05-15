@@ -1,0 +1,53 @@
+﻿@model Data.Entities.Theory
+@{
+    ViewData["Title"] = $"Связать тесты с теорией «{Model.Name}»";
+    var allTests = ViewBag.AllTests as List<Data.Entities.Test>;
+}
+<div class="container mt-4">
+    <h2>@ViewData["Title"]</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <h4>Привязанные тесты</h4>
+            @if (Model.TheoryTestRelations.Any())
+            {
+                <ul class="list-group">
+                    @foreach (var rel in Model.TheoryTestRelations)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            @rel.Test.File.Name
+                            <form asp-action="RemoveTest" method="post">
+                                <input type="hidden" name="theoryId" value="@Model.Id" />
+                                <input type="hidden" name="testId" value="@rel.Test.Id" />
+                                <button type="submit" class="btn btn-sm btn-danger">Отвязать</button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p>Нет привязанных тестов.</p>
+            }
+        </div>
+        <div class="col-md-6">
+            <h4>Доступные тесты</h4>
+            <ul class="list-group">
+                @foreach (var test in allTests)
+                {
+                    if (!Model.TheoryTestRelations.Any(r => r.TestId == test.Id))
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            @test.File.Name
+                            <form asp-action="AddTest" method="post">
+                                <input type="hidden" name="theoryId" value="@Model.Id" />
+                                <input type="hidden" name="testId" value="@test.Id" />
+                                <button type="submit" class="btn btn-sm btn-primary">Привязать</button>
+                            </form>
+                        </li>
+                    }
+                }
+            </ul>
+        </div>
+    </div>
+    <a href="@Url.Action("Index")" class="btn btn-secondary mt-3">Назад</a>
+</div>

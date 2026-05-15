@@ -1,0 +1,62 @@
+﻿@model Data.Entities.Test
+@{
+    ViewData["Title"] = "Редактировать тест";
+}
+
+<div class="container mt-4">
+    <h1>✏️ Редактировать тест</h1>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6">
+            <form method="post" enctype="multipart/form-data">
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="FileId" />
+
+                <div class="mb-3">
+                    <label class="form-label">Текущий файл</label>
+                    <div class="alert alert-info">
+                        <strong>@Model.File?.Name</strong><br />
+                        <small>@System.IO.Path.GetFileName(Model.File?.FilePath)</small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Новый JSON файл (опционально)</label>
+                    <input type="file" name="file" class="form-control" accept=".json" />
+                    <small class="text-muted">Оставьте пустым, чтобы сохранить текущий файл</small>
+                </div>
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Сохранить изменения
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Отмена
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card bg-warning bg-opacity-10">
+                <div class="card-header">
+                    <strong>⚠️ Внимание:</strong>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>При загрузке нового файла старый будет удалён</li>
+                        <li>Убедитесь, что новый JSON файл имеет правильную структуру</li>
+                        <li>Изменения вступят в силу сразу после сохранения</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

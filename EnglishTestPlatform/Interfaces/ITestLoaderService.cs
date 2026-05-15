@@ -4,7 +4,7 @@ namespace EnglishTestPlatform.Interfaces
 {
     public interface ITestLoaderService
     {
-        List<string> GetAvailableTests();
-        TestModel LoadTest(string testFileName);
+        Task<TestModel> LoadTestFromDatabaseAsync(string testName);
+        Task<string> GetTestFilePathAsync(string testName);
     }
 }

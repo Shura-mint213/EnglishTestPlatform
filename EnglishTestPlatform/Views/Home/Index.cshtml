@@ -1,56 +1,68 @@
-﻿@model List<string>
+﻿@model List<Data.Entities.Test>
 @{
-    ViewData["Title"] = "Выбор теста";
+    ViewData["Title"] = "Главная";
+    var theories = ViewBag.Theories as List<Data.Entities.Theory>;
 }
 <div class="container mt-5">
-    <h1 class="mb-4">📚 Тесты по английскому языку</h1>
+    <h1 class="mb-4">📚 Учебная платформа по английскому языку</h1>
 
-    @if (!Model.Any())
-    {
-        <div class="alert alert-warning">
-            ⚠️ Нет доступных тестов. Добавьте JSON-файлы в папку <code>Tests/</code>
+    <!-- Блок теории -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h3>📖 Теоретические материалы</h3>
         </div>
-    }
-    else
-    {
-        <div class="row">
-            @foreach (var test in Model)
+        <div class="card-body">
+            @if (theories != null && theories.Any())
             {
-                <div class="col-md-4 mb-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">@test.Replace("_", " ").Replace("test", "", StringComparison.OrdinalIgnoreCase).Trim()</h5>
-                            <p class="card-text text-muted">Файл: @test</p>
-                            <a href="@Url.Action("Take", "Test", new { testName = test })" class="btn btn-primary">Начать тест</a>
+                <div class="row">
+                    @foreach (var theory in theories)
+                    {
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">@theory.File.Name</h5>
+                                    <a href="@Url.Action("Details", "Theory", new { id = theory.Id })"
+                                       class="btn btn-outline-primary">Читать</a>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    }
                 </div>
             }
+            else
+            {
+                <p>Теория ещё не добавлена.</p>
+            }
         </div>
-    }
+    </div>
 
-    <div class="mt-4">
-        <div class="card bg-light">
-            <div class="card-body">
-                <h6>📁 Как добавить новый тест:</h6>
-                <ol class="small">
-                    <li>Создайте JSON-файл в папке <code>/Tests/</code></li>
-                    <li>Используйте структуру из примера ниже</li>
-                    <li>Обновите страницу</li>
-                </ol>
-                <pre class="small bg-white p-2 border rounded"><code>{
-  "testTitle": "Название теста",
-  "questions": [
-    {
-      "type": "multiple_choice",
-      "text": "Вопрос",
-      "options": ["Ответ1", "Ответ2"],
-      "correct": "Ответ1",
-      "explanation": "Пояснение"
-    }
-  ]
-}</code></pre>
-            </div>
+    <!-- Блок тестов (как было) -->
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h3>✍️ Тесты</h3>
+        </div>
+        <div class="card-body">
+            @if (Model != null && Model.Any())
+            {
+                <div class="row">
+                    @foreach (var test in Model)
+                    {
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">@test.File.Name</h5>
+                                    <a href="@Url.Action("Take", "Test", new { testName = @test.File.Name })"
+                                       class="btn btn-primary">Начать тест</a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p>Нет доступных тестов.</p>
+            }
         </div>
     </div>
 </div>

@@ -54,8 +54,7 @@ namespace Data
                       .HasForeignKey(ttr => ttr.TheoryId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
-
         }
-
     }
 }
+

@@ -1,0 +1,116 @@
+﻿@model Data.Entities.Test
+@{
+    ViewData["Title"] = $"Связь теории с тестом «{Model.File?.Name}»";
+    var allTheories = ViewBag.AllTheories as List<Data.Entities.Theory>;
+}
+
+<div class="container mt-4">
+    <h1>🔗 Связь теории с тестом</h1>
+    <h3 class="text-muted mb-4">Тест: @Model.File?.Name</h3>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Привязанные теории -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">✅ Привязанные теории (@Model.TheoryTestRelations.Count)</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.TheoryTestRelations != null && Model.TheoryTestRelations.Any())
+                    {
+                        <div class="list-group">
+                            @foreach (var relation in Model.TheoryTestRelations)
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>@relation.Theory?.Name</strong><br />
+                                        <small class="text-muted">Файл: @relation.Theory?.File?.Name</small>
+                                    </div>
+                                    <form asp-action="RemoveTheory" method="post" class="d-inline">
+                                        <input type="hidden" name="testId" value="@Model.Id" />
+                                        <input type="hidden" name="theoryId" value="@relation.TheoryId" />
+                                        <button type="submit" class="btn btn-sm btn-danger"
+                                                onclick="return confirm('Отвязать теорию «@relation.Theory?.Name»?')">
+                                            <i class="bi bi-unlink"></i> Отвязать
+                                        </button>
+                                    </form>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center mb-0">
+                            <i class="bi bi-info-circle"></i> Нет привязанных теорий
+                        </p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Доступные теории -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">📚 Доступные теории</h5>
+                </div>
+                <div class="card-body">
+                    @if (allTheories != null && allTheories.Any())
+                    {
+                        var availableTheories = allTheories
+                        .Where(t => !Model.TheoryTestRelations.Any(r => r.TheoryId == t.Id))
+                        .ToList();
+
+                        @if (availableTheories.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var theory in availableTheories)
+                                {
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>@theory.Name</strong><br />
+                                            <small class="text-muted">Файл: @theory.File?.Name</small>
+                                        </div>
+                                        <form asp-action="AddTheory" method="post" class="d-inline">
+                                            <input type="hidden" name="testId" value="@Model.Id" />
+                                            <input type="hidden" name="theoryId" value="@theory.Id" />
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="bi bi-link"></i> Привязать
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted text-center mb-0">
+                                <i class="bi bi-check-circle"></i> Все теории уже привязаны
+                            </p>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center mb-0">
+                            <i class="bi bi-exclamation-triangle"></i> Нет доступных теорий
+                        </p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Назад к списку тестов
+        </a>
+    </div>
+</div>

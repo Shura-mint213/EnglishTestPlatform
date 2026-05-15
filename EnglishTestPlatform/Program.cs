@@ -13,6 +13,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<ITestLoaderService, TestLoaderService>();
 builder.Services.AddScoped<TestEvaluatorService>();
+builder.Services.AddScoped<IFileService, FileService>();
 
 // Определяем путь к файлу БД
 var dbPath = Path.Combine(

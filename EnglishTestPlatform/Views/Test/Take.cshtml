@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = Model.TestTitle;
     var testName = ViewBag.TestName as string;
+    var fullTestName = ViewBag.FullTestName as string ?? testName;
 }
 
 <div class="container mt-4">
@@ -96,19 +97,46 @@
     </form>
 </div>
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/cheatsheet.css" />
+}
+
 @section Scripts {
+    <script src="~/js/cheatsheet.js"></script>
     <script>
-        // Только для автосохранения (опционально)
-        // Не влияет на отправку формы
+        window.testName = "@fullTestName";
+
+        // Сохранение прогресса (опционально)
         function saveProgress() {
-            // Можно оставить для localStorage, но это опционально
-            console.log('Progress saved');
+            const answers = {};
+            document.querySelectorAll('.form-check-input:checked, .form-control, .form-select').forEach(el => {
+                if (el.name) {
+                    answers[el.name] = el.value;
+                }
+            });
+            localStorage.setItem(`test_${window.testName}_progress`, JSON.stringify(answers));
         }
 
-        // Автосохранение при изменении полей
+        // Автосохранение
         document.querySelectorAll('.form-check-input, .form-select, .form-control').forEach(el => {
             el.addEventListener('change', saveProgress);
             el.addEventListener('input', saveProgress);
         });
+
+        // Восстановление прогресса
+        const saved = localStorage.getItem(`test_${window.testName}_progress`);
+        if (saved) {
+            const answers = JSON.parse(saved);
+            Object.keys(answers).forEach(name => {
+                const el = document.querySelector(`[name="${name}"]`);
+                if (el) {
+                    if (el.type === 'checkbox' || el.type === 'radio') {
+                        if (el.value === answers[name]) el.checked = true;
+                    } else {
+                        el.value = answers[name];
+                    }
+                }
+            });
+        }
     </script>
 }

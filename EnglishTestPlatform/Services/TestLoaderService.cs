@@ -1,147 +1,62 @@
-﻿using EnglishTestPlatform.Interfaces;
+﻿using Data;
+using EnglishTestPlatform.Interfaces;
 using EnglishTestPlatform.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace EnglishTestPlatform.Services
 {
     public class TestLoaderService : ITestLoaderService
     {
-        private readonly string _testsDirectory;
+        private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _env;
+        private readonly JsonSerializerOptions _jsonOptions;
 
-        public TestLoaderService(IWebHostEnvironment env)
+        public TestLoaderService(AppDbContext context, 
+            IWebHostEnvironment env)
         {
+            _context = context;
             _env = env;
-            _testsDirectory = Path.Combine(env.ContentRootPath, "Tests");
-
-            if (!Directory.Exists(_testsDirectory))
+            _jsonOptions = new JsonSerializerOptions
             {
-                Directory.CreateDirectory(_testsDirectory);
-                CreateSampleTest();
-            }
-        }
-
-        private void CreateSampleTest()
-        {
-            var sampleTest = new
-            {
-                testTitle = "Sample Test",
-                questions = new object[]
-                {
-                    new
-                    {
-                        type = "multiple_choice",
-                        text = "What is the capital of France?",
-                        options = new[] { "London", "Berlin", "Paris", "Madrid" },
-                        correct = "Paris",
-                        explanation = "Paris is the capital of France."
-                    }
-                }
+                PropertyNameCaseInsensitive = true
             };
-
-            var json = JsonSerializer.Serialize(sampleTest, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(Path.Combine(_testsDirectory, "sample_test.json"), json);
+            // Добавляем кастомный конвертер
+            _jsonOptions.Converters.Add(new QuestionConverterService());
         }
 
-        public List<string> GetAvailableTests()
+        public async Task<string> GetTestFilePathAsync(string testName)
         {
-            if (!Directory.Exists(_testsDirectory))
-                return new List<string>();
+            // Ищем тест в БД
+            var allTests = await _context.Tests
+                .Include(t => t.File)
+                .ToListAsync();
 
-            return Directory.GetFiles(_testsDirectory, "*.json")
-                            .Select(Path.GetFileNameWithoutExtension)
-                            .ToList();
+            var test = allTests.FirstOrDefault(t =>
+                t.File != null &&
+                Path.GetFileNameWithoutExtension(t.File.Name) == testName);
+
+            if (test == null)
+                throw new FileNotFoundException($"Тест '{testName}' не найден в базе данных");
+
+            // Возвращаем полный путь к файлу
+            return Path.Combine(_env.ContentRootPath, test.File.FilePath);
         }
 
-        public TestModel LoadTest(string testFileName)
+        public async Task<TestModel> LoadTestFromDatabaseAsync(string testName)
         {
-            if (!testFileName.EndsWith(".json"))
-                testFileName = testFileName + ".json";
+            var filePath = await GetTestFilePathAsync(testName);
 
-            var filePath = Path.Combine(_testsDirectory, testFileName);
+            if (!System.IO.File.Exists(filePath))
+                throw new FileNotFoundException($"Файл теста не найден: {filePath}");
 
-            if (!File.Exists(filePath))
-            {
-                throw new FileNotFoundException($"Тест {testFileName} не найден в папке {_testsDirectory}");
-            }
+            var json = await System.IO.File.ReadAllTextAsync(filePath);
+            var test = JsonSerializer.Deserialize<TestModel>(json, _jsonOptions);
 
-            var json = File.ReadAllText(filePath);
-            var jsonDoc = JsonDocument.Parse(json);
-            var root = jsonDoc.RootElement;
+            if (test == null)
+                throw new InvalidOperationException("Не удалось десериализовать тест");
 
-            var testTitle = root.GetProperty("testTitle").GetString();
-            var questionsArray = root.GetProperty("questions");
-
-            var questions = new List<Question>();
-
-            foreach (var item in questionsArray.EnumerateArray())
-            {
-                var typeProperty = item.GetProperty("type").GetString();
-
-                switch (typeProperty)
-                {
-                    case "multiple_choice":
-                        questions.Add(new MultipleChoiceQuestion
-                        {
-                            Type = typeProperty,
-                            Text = item.GetProperty("text").GetString(),
-                            Explanation = item.TryGetProperty("explanation", out var exp) ? exp.GetString() : "",
-                            Options = item.GetProperty("options").EnumerateArray().Select(o => o.GetString()).ToList(),
-                            Correct = item.GetProperty("correct").GetString()
-                        });
-                        break;
-
-                    case "multiple_select":
-                        questions.Add(new MultipleSelectQuestion
-                        {
-                            Type = typeProperty,
-                            Text = item.GetProperty("text").GetString(),
-                            Explanation = item.TryGetProperty("explanation", out exp) ? exp.GetString() : "",
-                            Options = item.GetProperty("options").EnumerateArray().Select(o => o.GetString()).ToList(),
-                            Correct = item.GetProperty("correct").EnumerateArray().Select(c => c.GetString()).ToList()
-                        });
-                        break;
-
-                    case "matching":
-                        var pairs = new List<MatchingPair>();
-                        var pairsArray = item.GetProperty("pairs");
-                        foreach (var pair in pairsArray.EnumerateArray())
-                        {
-                            pairs.Add(new MatchingPair
-                            {
-                                Left = pair.GetProperty("left").GetString(),
-                                Right = pair.GetProperty("right").GetString()
-                            });
-                        }
-                        questions.Add(new MatchingQuestion
-                        {
-                            Type = typeProperty,
-                            Text = item.GetProperty("text").GetString(),
-                            Explanation = item.TryGetProperty("explanation", out exp) ? exp.GetString() : "",
-                            Pairs = pairs
-                        });
-                        break;
-
-                    case "fill_in":
-                        questions.Add(new FillInQuestion
-                        {
-                            Type = typeProperty,
-                            Text = item.GetProperty("text").GetString(),
-                            Explanation = item.TryGetProperty("explanation", out exp) ? exp.GetString() : "",
-                            Correct = item.GetProperty("correct").GetString()
-                        });
-                        break;
-
-                    default:
-                        throw new NotSupportedException($"Неизвестный тип вопроса: {typeProperty}");
-                }
-            }
-
-            return new TestModel
-            {
-                TestTitle = testTitle,
-                Questions = questions
-            };
+            return test;
         }
     }
 }

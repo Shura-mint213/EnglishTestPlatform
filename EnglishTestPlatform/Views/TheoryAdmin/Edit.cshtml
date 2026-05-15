@@ -1,0 +1,23 @@
+﻿@model Data.Entities.Theory
+@{
+    ViewData["Title"] = Model?.Id == 0 ? "Создать теорию" : "Редактировать теорию";
+}
+<div class="container mt-4">
+    <h1>@ViewData["Title"]</h1>
+    <form method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label>Название теории</label>
+            <input asp-for="Name" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label>Файл (.md)</label>
+            <input type="file" name="file" class="form-control" accept=".md" @(Model?.Id == 0 ? "required" : "") />
+            @if (Model?.Id > 0)
+            {
+                <small class="text-muted">Оставьте пустым, чтобы не менять файл</small>
+            }
+        </div>
+        <button type="submit" class="btn btn-success">Сохранить</button>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>

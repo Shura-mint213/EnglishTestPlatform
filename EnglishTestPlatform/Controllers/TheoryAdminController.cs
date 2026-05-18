@@ -19,22 +19,42 @@ namespace EnglishTestPlatform.Controllers
             _fileService = fileService;
         }
 
-        // Список теорий
+        /// <summary>
+        /// Список всех теоретических материалов
+        /// </summary>
         public async Task<IActionResult> Index()
         {
             var theories = await _context.Theories
                 .Include(t => t.File)
+                .Include(t => t.Section)
                 .ToListAsync();
             return View(theories);
         }
 
-        // Форма создания
-        public IActionResult Create() => View();
+        /// <summary>
+        /// Форма создания теории
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> Create(int? sectionId)
+        {
+            var model = new TheoryViewModel
+            {
+                SectionId = sectionId,
+                Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync()
+            };
+            return View(model);
+        }
 
+        /// <summary>
+        /// Обработка создания теории
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(TheoryViewModel model)
         {
+            // Удаляем лишние ошибки валидации
+            ModelState.Remove("Sections");
+
             // Проверяем валидацию
             if (ModelState.IsValid)
             {
@@ -42,6 +62,7 @@ namespace EnglishTestPlatform.Controllers
                 if (model.File == null || Path.GetExtension(model.File.FileName).ToLower() != ".md")
                 {
                     ModelState.AddModelError("File", "Загрузите файл в формате .md");
+                    model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
                     return View(model);
                 }
 
@@ -55,13 +76,14 @@ namespace EnglishTestPlatform.Controllers
                     {
                         Name = model.Name,
                         File = savedFile,
-                        FileId = savedFile.Id
+                        FileId = savedFile.Id,
+                        SectionId = model.SectionId
                     };
 
                     _context.Theories.Add(theory);
                     await _context.SaveChangesAsync();
 
-                    TempData["Success"] = "Теория успешно добавлена!";
+                    TempData["Success"] = $"Теория «{model.Name}» успешно добавлена!";
                     return RedirectToAction(nameof(Index));
                 }
                 catch (Exception ex)
@@ -72,67 +94,128 @@ namespace EnglishTestPlatform.Controllers
             }
 
             // Выводим ошибки для отладки
-            Console.WriteLine("=== ModelState Errors ===");
-            foreach (var key in ModelState.Keys)
+            if (!ModelState.IsValid)
             {
-                var errors = ModelState[key].Errors;
-                foreach (var error in errors)
+                Console.WriteLine("=== ModelState Errors ===");
+                foreach (var key in ModelState.Keys)
                 {
-                    Console.WriteLine($"Key: {key}, Error: {error.ErrorMessage}");
+                    foreach (var error in ModelState[key].Errors)
+                    {
+                        Console.WriteLine($"Key: {key}, Error: {error.ErrorMessage}");
+                    }
                 }
             }
 
+            model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
             return View(model);
         }
 
-        // Редактирование
+        /// <summary>
+        /// Форма редактирования теории
+        /// </summary>
+        [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
             var theory = await _context.Theories
                 .Include(t => t.File)
+                .Include(t => t.Section)
                 .FirstOrDefaultAsync(t => t.Id == id);
+
             if (theory == null) return NotFound();
-            return View(theory);
+
+            var model = new TheoryViewModel
+            {
+                Id = theory.Id,
+                Name = theory.Name,
+                SectionId = theory.SectionId,
+                ExistingFileId = theory.FileId, // Сохраняем ID существующего файла
+                Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync()
+            };
+
+            return View(model);
         }
 
+        /// <summary>
+        /// Обработка редактирования теории
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Theory model, IFormFile? file)
+        public async Task<IActionResult> Edit(int id, TheoryViewModel model, IFormFile? file)
         {
             if (id != model.Id) return NotFound();
+
             var theory = await _context.Theories
                 .Include(t => t.File)
                 .FirstOrDefaultAsync(t => t.Id == id);
+
             if (theory == null) return NotFound();
+
+            ModelState.Remove("Sections");
+            ModelState.Remove("File");
+            ModelState.Remove("ExistingFileId");
 
             if (ModelState.IsValid)
             {
-                theory.Name = model.Name;
-                if (file != null)
+                try
                 {
-                    if (Path.GetExtension(file.FileName).ToLower() != ".md")
-                        ModelState.AddModelError("file", "Файл должен быть .md");
-                    else
-                    {
-                        // Удаляем старый файл
-                        _fileService.DeleteFile(theory.File);
-                        _context.Files.Remove(theory.File);
+                    // Обновляем название и раздел
+                    theory.Name = model.Name;
+                    theory.SectionId = model.SectionId;
 
-                        // Сохраняем новый
-                        var newFile = await _fileService.SaveFileAsync(file, "Theories");
-                        theory.File = newFile;
+                    // Если загружен новый файл
+                    if (file != null)
+                    {
+                        if (Path.GetExtension(file.FileName).ToLower() != ".md")
+                        {
+                            ModelState.AddModelError("File", "Файл должен быть .md");
+                        }
+                        else
+                        {
+                            // Удаляем старый файл
+                            if (theory.File != null)
+                            {
+                                _fileService.DeleteFile(theory.File);
+                                _context.Files.Remove(theory.File);
+                            }
+
+                            // Сохраняем новый
+                            var newFile = await _fileService.SaveFileAsync(file, "Theories");
+                            theory.File = newFile;
+                            theory.FileId = newFile.Id;
+                        }
+                    }
+                    // Если файл не загружен, но ExistingFileId есть - сохраняем существующий файл
+                    else if (model.ExistingFileId.HasValue && theory.FileId != model.ExistingFileId.Value)
+                    {
+                        var existingFile = await _context.Files.FindAsync(model.ExistingFileId.Value);
+                        if (existingFile != null)
+                        {
+                            theory.File = existingFile;
+                            theory.FileId = existingFile.Id;
+                        }
+                    }
+
+                    if (ModelState.IsValid)
+                    {
+                        await _context.SaveChangesAsync();
+                        TempData["Success"] = $"Теория «{model.Name}» успешно обновлена!";
+                        return RedirectToAction(nameof(Index));
                     }
                 }
-                if (ModelState.IsValid)
+                catch (Exception ex)
                 {
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction(nameof(Index));
+                    Console.WriteLine($"Ошибка при обновлении: {ex.Message}");
+                    ModelState.AddModelError("", $"Ошибка при обновлении: {ex.Message}");
                 }
             }
-            return View(theory);
+
+            model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+            return View(model);
         }
 
-        // Удаление
+        /// <summary>
+        /// Удаление теории
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -140,24 +223,30 @@ namespace EnglishTestPlatform.Controllers
             var theory = await _context.Theories
                 .Include(t => t.File)
                 .FirstOrDefaultAsync(t => t.Id == id);
+
             if (theory != null)
             {
                 _fileService.DeleteFile(theory.File);
                 _context.Files.Remove(theory.File);
                 _context.Theories.Remove(theory);
                 await _context.SaveChangesAsync();
+                TempData["Success"] = "Теория успешно удалена!";
             }
+
             return RedirectToAction(nameof(Index));
         }
 
-        // Управление связанными тестами
+        /// <summary>
+        /// Управление связанными тестами
+        /// </summary>
         public async Task<IActionResult> ManageTests(int id)
         {
             var theory = await _context.Theories
                 .Include(t => t.TheoryTestRelations)
-                .ThenInclude(ttr => ttr.Test)
-                .ThenInclude(t => t.File)
+                    .ThenInclude(ttr => ttr.Test)
+                    .ThenInclude(t => t.File)
                 .FirstOrDefaultAsync(t => t.Id == id);
+
             if (theory == null) return NotFound();
 
             var allTests = await _context.Tests
@@ -168,27 +257,44 @@ namespace EnglishTestPlatform.Controllers
             return View(theory);
         }
 
+        /// <summary>
+        /// Добавление связи с тестом
+        /// </summary>
         [HttpPost]
         public async Task<IActionResult> AddTest(int theoryId, int testId)
         {
-            var relation = new TheoryTestRelation { TheoryId = theoryId, TestId = testId };
-            _context.TheoryTestRelations.Add(relation);
-            await _context.SaveChangesAsync();
+            // Проверяем, существует ли уже связь
+            var exists = await _context.TheoryTestRelations
+                .AnyAsync(r => r.TheoryId == theoryId && r.TestId == testId);
+
+            if (!exists)
+            {
+                var relation = new TheoryTestRelation { TheoryId = theoryId, TestId = testId };
+                _context.TheoryTestRelations.Add(relation);
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Тест успешно привязан к теории!";
+            }
+
             return RedirectToAction(nameof(ManageTests), new { id = theoryId });
         }
 
+        /// <summary>
+        /// Удаление связи с тестом
+        /// </summary>
         [HttpPost]
         public async Task<IActionResult> RemoveTest(int theoryId, int testId)
         {
             var relation = await _context.TheoryTestRelations
                 .FirstOrDefaultAsync(r => r.TheoryId == theoryId && r.TestId == testId);
+
             if (relation != null)
             {
                 _context.TheoryTestRelations.Remove(relation);
                 await _context.SaveChangesAsync();
+                TempData["Success"] = "Связь с тестом удалена!";
             }
+
             return RedirectToAction(nameof(ManageTests), new { id = theoryId });
         }
     }
 }
-

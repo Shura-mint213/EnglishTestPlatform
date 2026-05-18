@@ -1,23 +1,92 @@
-﻿@model Data.Entities.Theory
+﻿@model EnglishTestPlatform.ViewModel.TheoryViewModel
 @{
-    ViewData["Title"] = Model?.Id == 0 ? "Создать теорию" : "Редактировать теорию";
+    ViewData["Title"] = "Редактировать теорию";
 }
+
 <div class="container mt-4">
-    <h1>@ViewData["Title"]</h1>
-    <form method="post" enctype="multipart/form-data">
-        <div class="mb-3">
-            <label>Название теории</label>
-            <input asp-for="Name" class="form-control" required />
+    <h1>✏️ Редактировать теорию</h1>
+    <hr />
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-        <div class="mb-3">
-            <label>Файл (.md)</label>
-            <input type="file" name="file" class="form-control" accept=".md" @(Model?.Id == 0 ? "required" : "") />
-            @if (Model?.Id > 0)
-            {
-                <small class="text-muted">Оставьте пустым, чтобы не менять файл</small>
-            }
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <form method="post" enctype="multipart/form-data">
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="ExistingFileId" />
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label">Название теории *</label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                    <small class="text-muted">Измените название, чтобы обновить отображаемое имя теории</small>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="SectionId" class="form-label">Раздел</label>
+                    <select asp-for="SectionId" class="form-select">
+                        <option value="">-- Без раздела --</option>
+                        @if (Model.Sections != null)
+                        {
+                            @foreach (var sec in Model.Sections)
+                            {
+                                <option value="@sec.Id">@sec.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Текущий файл</label>
+                    <div class="alert alert-info">
+                        <strong>@Model.Name</strong><br />
+                        <small>Файл уже загружен и сохранён в системе</small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Заменить файл (опционально)</label>
+                    <input type="file" name="file" class="form-control" accept=".md" />
+                    <small class="text-muted">Выберите новый MD файл, ТОЛЬКО если хотите заменить текущий. Оставьте пустым, чтобы сохранить существующий файл.</small>
+                </div>
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Сохранить изменения
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Отмена
+                    </a>
+                </div>
+            </form>
         </div>
-        <button type="submit" class="btn btn-success">Сохранить</button>
-        <a href="@Url.Action("Index")" class="btn btn-secondary">Отмена</a>
-    </form>
+
+        <div class="col-md-6">
+            <div class="card bg-warning bg-opacity-10">
+                <div class="card-header">
+                    <strong>⚠️ Внимание:</strong>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Если вы не выбираете новый файл, существующий файл остаётся без изменений</li>
+                        <li>При загрузке нового файла старый будет удалён</li>
+                        <li>Убедитесь, что новый MD файл имеет правильную структуру Markdown</li>
+                        <li>Название теории можно менять независимо от файла</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

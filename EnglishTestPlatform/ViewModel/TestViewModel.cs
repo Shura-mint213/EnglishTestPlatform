@@ -1,6 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Data.Entities;
+using System.ComponentModel.DataAnnotations;
 
-namespace EnglishTestPlatform.Models
+namespace EnglishTestPlatform.ViewModel
 {
     public class TestViewModel
     {
@@ -9,8 +10,14 @@ namespace EnglishTestPlatform.Models
         [Required(ErrorMessage = "Название теста обязательно")]
         [StringLength(200, ErrorMessage = "Название не может быть длиннее 200 символов")]
         public string Name { get; set; } = string.Empty;
+        public int? SectionId { get; set; }
+        /// <summary>
+        /// ID существующего файла
+        /// </summary>
+        public int? ExistingFileId { get; set; } 
 
         [Required(ErrorMessage = "Загрузите файл теста")]
         public IFormFile? File { get; set; }
+        public List<Section>? Sections { get; set; }
     }
 }

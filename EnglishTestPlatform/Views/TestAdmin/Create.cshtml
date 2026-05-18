@@ -1,4 +1,4 @@
-﻿@model EnglishTestPlatform.Models.TestViewModel
+﻿@model EnglishTestPlatform.ViewModel.TestViewModel
 @{
     ViewData["Title"] = "Создать тест";
 }
@@ -7,63 +7,65 @@
     <h1>📝 Создать новый тест</h1>
     <hr />
 
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger">
+            <strong>Ошибки валидации:</strong>
+            <ul>
+                @foreach (var key in ViewData.ModelState.Keys)
+                {
+                    foreach (var error in ViewData.ModelState[key].Errors)
+                    {
+                        <li>@key: @error.ErrorMessage</li>
+                    }
+                }
+            </ul>
+        </div>
+    }
+
     <div class="row">
         <div class="col-md-6">
             <form method="post" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label asp-for="Name" class="form-label">Название теста *</label>
-                    <input asp-for="Name" class="form-control" placeholder="Например: Past Simple Test" />
+                    <input asp-for="Name" class="form-control" />
                     <span asp-validation-for="Name" class="text-danger"></span>
-                    <small class="text-muted">Введите понятное название для отображения пользователям</small>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="SectionId" class="form-label">Раздел</label>
+                    <select asp-for="SectionId" class="form-select">
+                        <option value="">-- Без раздела --</option>
+                        @if (Model.Sections != null)
+                        {
+                            @foreach (var sec in Model.Sections)
+                            {
+                                <option value="@sec.Id">@sec.Name</option>
+                            }
+                        }
+                    </select>
                 </div>
 
                 <div class="mb-3">
                     <label asp-for="File" class="form-label">JSON файл теста *</label>
                     <input asp-for="File" type="file" class="form-control" accept=".json" />
                     <span asp-validation-for="File" class="text-danger"></span>
-                    <small class="text-muted">
-                        Загрузите JSON файл с вопросами теста.<br />
-                        Файл должен соответствовать структуре: testTitle, questions, type, options, correct и т.д.
-                    </small>
+                    <small class="text-muted">Загрузите JSON файл с вопросами теста</small>
                 </div>
 
                 <div class="mb-3">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-save"></i> Сохранить
-                    </button>
-                    <a href="@Url.Action("Index")" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Отмена
-                    </a>
+                    <button type="submit" class="btn btn-success">Сохранить</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">Отмена</a>
                 </div>
             </form>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card bg-light">
-                <div class="card-header">
-                    <strong>📋 Пример структуры JSON файла:</strong>
-                </div>
-                <div class="card-body">
-                    <pre class="small mb-0"><code>{
-  "testTitle": "Past Simple Test",
-  "questions": [
-    {
-      "type": "multiple_choice",
-      "text": "I ___ to London last year.",
-      "options": ["went", "have gone", "go"],
-      "correct": "went",
-      "explanation": "Last year → Past Simple"
-    },
-    {
-      "type": "fill_in",
-      "text": "She ___ (to be) happy.",
-      "correct": "was",
-      "explanation": "Past Simple → was"
-    }
-  ]
-}</code></pre>
-                </div>
-            </div>
         </div>
     </div>
 </div>

@@ -29,5 +29,14 @@ namespace Data.Entities
         /// Коллекция связок теории и тестов
         /// </summary>
         public ICollection<TheoryTestRelation> TheoryTestRelations { get; set; } = new List<TheoryTestRelation>();
+        /// <summary>
+        /// Раздел в котором находиться тест
+        /// </summary>
+        public int? SectionId { get; set; }
+        /// <summary>
+        /// Модель данных раздела
+        /// </summary>
+        [ForeignKey(nameof(SectionId))]
+        public virtual Section? Section { get; set; }
     }
 }

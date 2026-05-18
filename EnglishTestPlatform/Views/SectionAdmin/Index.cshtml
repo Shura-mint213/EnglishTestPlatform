@@ -1,0 +1,83 @@
+﻿@model List<Data.Entities.Section>
+@{
+    ViewData["Title"] = "Управление разделами";
+}
+
+<div class="container mt-4">
+    <h1>📁 Управление разделами</h1>
+    
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    
+    <a href="@Url.Action("Create")" class="btn btn-primary mb-3">
+        <i class="bi bi-plus-circle"></i> Создать корневой раздел
+    </a>
+    
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Описание</th>
+                    <th>Родительский раздел</th>
+                    <th>Порядок</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var sec in Model)
+                    {
+                        <tr>
+                            <td>@sec.Id</td>
+                            <td>
+                                <i class="bi bi-folder"></i> @sec.Name
+                            </td>
+                            <td>@(sec.Description?.Length > 50 ? sec.Description.Substring(0, 50) + "..." : sec.Description)</td>
+                            <td>@(sec.ParentSection?.Name ?? "—")</td>
+                            <td>@sec.OrderBy</td>
+                            <td>
+                                <a href="@Url.Action("Edit", new { id = sec.Id })" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-pencil"></i> Изменить
+                                </a>
+                                <a href="@Url.Action("Create", new { parentId = sec.Id })" class="btn btn-sm btn-info">
+                                    <i class="bi bi-folder-plus"></i> Добавить подраздел
+                                </a>
+                                <form asp-action="Delete" method="post" style="display:inline" 
+                                      onsubmit="return confirm('Удалить раздел «@sec.Name»? Все подразделы, теории и тесты будут перемещены в родительский раздел.');">
+                                    <input type="hidden" name="id" value="@sec.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="bi bi-trash"></i> Удалить
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">
+                            Нет созданных разделов. Нажмите "Создать корневой раздел" чтобы добавить первый раздел.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

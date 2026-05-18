@@ -1,0 +1,87 @@
+﻿@model EnglishTestPlatform.ViewModel.SectionViewModel
+@{
+    ViewData["Title"] = Model.ParentSectionId.HasValue ? "Создать подраздел" : "Создать раздел";
+}
+
+<div class="container mt-4">
+    <h1>@ViewData["Title"]</h1>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6">
+            <form method="post">
+                @if (Model.ParentSectionId.HasValue)
+                {
+                    <input type="hidden" asp-for="ParentSectionId" />
+                }
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label">Название раздела *</label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label">Описание</label>
+                    <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="OrderBy" class="form-label">Порядок сортировки</label>
+                    <input asp-for="OrderBy" type="number" class="form-control" />
+                    <span asp-validation-for="OrderBy" class="text-danger"></span>
+                    <small class="text-muted">Меньшее значение = выше в списке</small>
+                </div>
+
+                @if (Model.ParentSectionId.HasValue)
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Этот раздел будет создан внутри родительского раздела.
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-success">Сохранить</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">Отмена</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <strong>📌 Информация о разделах</strong>
+                </div>
+                <div class="card-body">
+                    <p>Разделы помогают организовать учебные материалы в иерархическую структуру:</p>
+                    <ul>
+                        <li>Можно создавать вложенные разделы любой глубины</li>
+                        <li>Теории и тесты можно привязывать к любому разделу</li>
+                        <li>Пользователи смогут навигировать по разделам на главной странице</li>
+                    </ul>
+                    <hr />
+                    <p><strong>Пример структуры:</strong></p>
+                    <pre class="bg-white p-2 border rounded">
+📁 Английский язык
+  📁 Грамматика
+    📁 Времена
+      - Теория: Present Simple
+      - Тест: Past Simple
+    📁 Артикли
+      - Теория: Артикли
+      - Тест: Articles Test
+  📁 Лексика
+    - Теория: Слова по теме "Еда"
+    - Тест: Food Vocabulary</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

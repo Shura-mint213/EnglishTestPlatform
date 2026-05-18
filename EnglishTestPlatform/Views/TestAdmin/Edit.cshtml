@@ -1,4 +1,4 @@
-﻿@model Data.Entities.Test
+﻿@model EnglishTestPlatform.ViewModel.TestViewModel
 @{
     ViewData["Title"] = "Редактировать тест";
 }
@@ -7,24 +7,53 @@
     <h1>✏️ Редактировать тест</h1>
     <hr />
 
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="row">
         <div class="col-md-6">
             <form method="post" enctype="multipart/form-data">
                 <input type="hidden" asp-for="Id" />
-                <input type="hidden" asp-for="FileId" />
+                <input type="hidden" asp-for="ExistingFileId" />
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label">Название теста *</label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                    <small class="text-muted">Измените название, чтобы обновить отображаемое имя теста</small>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="SectionId" class="form-label">Раздел</label>
+                    <select asp-for="SectionId" class="form-select">
+                        <option value="">-- Без раздела --</option>
+                        @if (Model.Sections != null)
+                        {
+                            @foreach (var sec in Model.Sections)
+                            {
+                                <option value="@sec.Id">@sec.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
 
                 <div class="mb-3">
                     <label class="form-label">Текущий файл</label>
                     <div class="alert alert-info">
-                        <strong>@Model.File?.Name</strong><br />
-                        <small>@System.IO.Path.GetFileName(Model.File?.FilePath)</small>
+                        <strong>@Model.Name</strong><br />
+                        <small>Файл уже загружен и сохранён в системе</small>
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Новый JSON файл (опционально)</label>
+                    <label class="form-label">Заменить файл (опционально)</label>
                     <input type="file" name="file" class="form-control" accept=".json" />
-                    <small class="text-muted">Оставьте пустым, чтобы сохранить текущий файл</small>
+                    <small class="text-muted">Выберите новый JSON файл, ТОЛЬКО если хотите заменить текущий. Оставьте пустым, чтобы сохранить существующий файл.</small>
                 </div>
 
                 <div class="mb-3">
@@ -45,9 +74,10 @@
                 </div>
                 <div class="card-body">
                     <ul class="mb-0">
+                        <li>Если вы не выбираете новый файл, существующий файл остаётся без изменений</li>
                         <li>При загрузке нового файла старый будет удалён</li>
                         <li>Убедитесь, что новый JSON файл имеет правильную структуру</li>
-                        <li>Изменения вступят в силу сразу после сохранения</li>
+                        <li>Название теста можно менять независимо от файла</li>
                     </ul>
                 </div>
             </div>

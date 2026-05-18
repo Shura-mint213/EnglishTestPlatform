@@ -32,6 +32,7 @@
                 <tr>
                     <th>ID</th>
                     <th>Название теста</th>
+                    <th>Раздел</th>
                     <th>Имя файла</th>
                     <th>Действия</th>
                 </tr>
@@ -44,6 +45,7 @@
                         <tr>
                             <td>@test.Id</td>
                             <td>@test.File?.Name</td>
+                            <td>@(test.Section?.Name ?? "—")</td>
                             <td>@System.IO.Path.GetFileName(test.File?.FilePath)</td>
                             <td>
                                 <a href="@Url.Action("Edit", new { id = test.Id })" class="btn btn-sm btn-warning">
@@ -65,7 +67,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="4" class="text-center text-muted">
+                        <td colspan="5" class="text-center text-muted">
                             Нет добавленных тестов. Нажмите "Добавить тест" чтобы создать первый.
                         </td>
                     </tr>

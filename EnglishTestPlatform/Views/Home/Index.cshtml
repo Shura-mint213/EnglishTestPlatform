@@ -1,68 +1,71 @@
-﻿@model List<Data.Entities.Test>
-@{
+﻿@{
     ViewData["Title"] = "Главная";
-    var theories = ViewBag.Theories as List<Data.Entities.Theory>;
 }
-<div class="container mt-5">
-    <h1 class="mb-4">📚 Учебная платформа по английскому языку</h1>
-
-    <!-- Блок теории -->
-    <div class="card mb-4">
-        <div class="card-header bg-info text-white">
-            <h3>📖 Теоретические материалы</h3>
-        </div>
-        <div class="card-body">
-            @if (theories != null && theories.Any())
+<div class="container mt-4">
+    <!-- Хлебные крошки -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="@Url.Action("Index")">Главная</a></li>
+            @foreach (var crumb in ViewBag.Breadcrumbs)
             {
-                <div class="row">
-                    @foreach (var theory in theories)
-                    {
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">@theory.File.Name</h5>
-                                    <a href="@Url.Action("Details", "Theory", new { id = theory.Id })"
-                                       class="btn btn-outline-primary">Читать</a>
-                                </div>
-                            </div>
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", new { sectionId = crumb.Id })">@crumb.Name</a></li>
+            }
+        </ol>
+    </nav>
+
+    <!-- Подразделы -->
+    @if (ViewBag.Sections.Count > 0)
+    {
+        <div class="row mb-4">
+            @foreach (var sec in ViewBag.Sections)
+            {
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">📁 @sec.Name</h5>
+                            <a href="@Url.Action("Index", new { sectionId = sec.Id })" class="btn btn-outline-primary">Открыть</a>
                         </div>
-                    }
+                    </div>
                 </div>
             }
-            else
-            {
-                <p>Теория ещё не добавлена.</p>
-            }
         </div>
-    </div>
+    }
 
-    <!-- Блок тестов (как было) -->
-    <div class="card">
-        <div class="card-header bg-success text-white">
-            <h3>✍️ Тесты</h3>
-        </div>
-        <div class="card-body">
-            @if (Model != null && Model.Any())
+    <!-- Теории -->
+    @if (ViewBag.Theories.Count > 0)
+    {
+        <h3>📖 Теоретические материалы</h3>
+        <div class="row mb-4">
+            @foreach (var theory in ViewBag.Theories)
             {
-                <div class="row">
-                    @foreach (var test in Model)
-                    {
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">@test.File.Name</h5>
-                                    <a href="@Url.Action("Take", "Test", new { testName = @test.File.Name })"
-                                       class="btn btn-primary">Начать тест</a>
-                                </div>
-                            </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">@theory.Name</h5>
+                            <a href="@Url.Action("Details", "Theory", new { id = theory.Id })" class="btn btn-info">Читать</a>
                         </div>
-                    }
+                    </div>
                 </div>
             }
-            else
+        </div>
+    }
+
+    <!-- Тесты -->
+    @if (ViewBag.Tests.Count > 0)
+    {
+        <h3>✍️ Тесты</h3>
+        <div class="row">
+            @foreach (var test in ViewBag.Tests)
             {
-                <p>Нет доступных тестов.</p>
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">@test.File.Name</h5>
+                            <a href="@Url.Action("Take", "Test", new { testName = @test.File.Name })" class="btn btn-success">Пройти тест</a>
+                        </div>
+                    </div>
+                </div>
             }
         </div>
-    </div>
+    }
 </div>

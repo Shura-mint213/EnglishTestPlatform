@@ -1,23 +1,80 @@
-﻿@model Data.Entities.Theory
+﻿@model EnglishTestPlatform.ViewModel.TheoryViewModel
 @{
-    ViewData["Title"] = Model?.Id == 0 ? "Создать теорию" : "Редактировать теорию";
+    ViewData["Title"] = "Создать теорию";
 }
+
 <div class="container mt-4">
-    <h1>@ViewData["Title"]</h1>
-    <form method="post" enctype="multipart/form-data">
-        <div class="mb-3">
-            <label>Название теории</label>
-            <input asp-for="Name" class="form-control" required />
+    <h1>📖 Создать новый теоретический материал</h1>
+    <hr />
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-        <div class="mb-3">
-            <label>Файл (.md)</label>
-            <input type="file" name="file" class="form-control" accept=".md" @(Model?.Id == 0 ? "required" : "") />
-            @if (Model?.Id > 0)
-            {
-                <small class="text-muted">Оставьте пустым, чтобы не менять файл</small>
-            }
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <form method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label">Название теории *</label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="SectionId" class="form-label">Раздел</label>
+                    <select asp-for="SectionId" class="form-select">
+                        <option value="">-- Без раздела --</option>
+                        @if (Model.Sections != null)
+                        {
+                            @foreach (var sec in Model.Sections)
+                            {
+                                <option value="@sec.Id">@sec.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="File" class="form-label">Markdown файл (.md) *</label>
+                    <input asp-for="File" type="file" class="form-control" accept=".md" />
+                    <span asp-validation-for="File" class="text-danger"></span>
+                    <small class="text-muted">Загрузите файл в формате Markdown (.md)</small>
+                </div>
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-success">Сохранить</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">Отмена</a>
+                </div>
+            </form>
         </div>
-        <button type="submit" class="btn btn-success">Сохранить</button>
-        <a href="@Url.Action("Index")" class="btn btn-secondary">Отмена</a>
-    </form>
+
+        <div class="col-md-6">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <strong>📝 Информация о Markdown</strong>
+                </div>
+                <div class="card-body">
+                    <p>Поддерживаемый синтаксис Markdown:</p>
+                    <ul>
+                        <li><code># Заголовок 1</code></li>
+                        <li><code>## Заголовок 2</code></li>
+                        <li><code>**жирный текст**</code></li>
+                        <li><code>*курсив*</code></li>
+                        <li><code>- элемент списка</code></li>
+                        <li><code>```csharp код ```</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

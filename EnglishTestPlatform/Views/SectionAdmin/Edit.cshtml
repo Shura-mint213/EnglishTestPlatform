@@ -1,0 +1,63 @@
+﻿@model Data.Entities.Section
+@{
+    ViewData["Title"] = "Редактировать раздел";
+}
+
+<div class="container mt-4">
+    <h1>✏️ Редактировать раздел</h1>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6">
+            <form method="post">
+                <input type="hidden" asp-for="Id" />
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label">Название раздела *</label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label">Описание</label>
+                    <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="OrderBy" class="form-label">Порядок сортировки</label>
+                    <input asp-for="OrderBy" type="number" class="form-control" />
+                    <span asp-validation-for="OrderBy" class="text-danger"></span>
+                    <small class="text-muted">Меньшее значение = выше в списке</small>
+                </div>
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">Отмена</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card bg-warning bg-opacity-10">
+                <div class="card-header">
+                    <strong>⚠️ Внимание</strong>
+                </div>
+                <div class="card-body">
+                    <p>Изменение раздела может повлиять на отображение:</p>
+                    <ul>
+                        <li>Теории и тесты, связанные с этим разделом, будут перемещены</li>
+                        <li>Пользователи увидят новое название в навигации</li>
+                        <li>Порядок сортировки влияет на расположение в списке</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

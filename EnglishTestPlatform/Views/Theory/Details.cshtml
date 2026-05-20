@@ -6,24 +6,38 @@
     var relatedTests = ViewBag.RelatedTests as List<Data.Entities.Test>;
 }
 <div class="container mt-4">
-    <h1>@Model.File.Name</h1>
-    <div class="markdown-body">
+    <div class="text-center mb-4">
+        <h1><i class="bi bi-journal-bookmark me-2"></i>@Model.File.Name</h1>
+    </div>
+    
+    <div class="markdown-body mb-5">
         @Html.Raw(htmlContent)
     </div>
 
     @if (relatedTests != null && relatedTests.Any())
     {
-        <hr />
-        <h3>📝 Пройти тест по этой теме:</h3>
-        <div class="row">
+        <hr class="my-5" />
+        <div class="text-center mb-4">
+            <h3><i class="bi bi-pencil-square me-2"></i>📝 Пройти тест по этой теме:</h3>
+            <p class="text-muted">Закрепите свои знания, пройдя один из тестов ниже</p>
+        </div>
+        <div class="row g-4 justify-content-center">
             @foreach (var test in relatedTests)
             {
-                <div class="col-md-4 mb-2">
-                    <div class="card">
-                        <div class="card-body">
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-3">
+                                <i class="bi bi-clipboard-check display-4 text-success"></i>
+                            </div>
                             <h5 class="card-title">@test.File.Name</h5>
+                            <p class="card-text text-muted flex-grow-1">
+                                Проверьте свои знания по данной теме
+                            </p>
                             <a href="@Url.Action("Take", "Test", new { testName = @test.File.Name })"
-                               class="btn btn-success">Начать тест</a>
+                               class="btn btn-success mt-auto">
+                                <i class="bi bi-play-fill me-1"></i>Начать тест
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -32,10 +46,14 @@
     }
     else
     {
-        <div class="alert alert-secondary mt-3">
-            К этому материалу пока не привязано ни одного теста.
+        <div class="alert alert-secondary text-center mt-4">
+            <i class="bi bi-info-circle me-2"></i>К этому материалу пока не привязано ни одного теста.
         </div>
     }
 
-    <a href="@Url.Action("Index")" class="btn btn-secondary mt-3">← Назад к списку</a>
+    <div class="text-center mt-4">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>← Назад к списку
+        </a>
+    </div>
 </div>

@@ -12,11 +12,14 @@ namespace EnglishTestPlatform.ViewModel
         public string Name { get; set; } = string.Empty;
         public int? SectionId { get; set; }
         /// <summary>
+        /// Содержимое теста в JSON формате
+        /// </summary>
+        public string? Content { get; set; }
+        /// <summary>
         /// ID существующего файла
         /// </summary>
         public int? ExistingFileId { get; set; } 
 
-        [Required(ErrorMessage = "Загрузите файл теста")]
         public IFormFile? File { get; set; }
         public List<Section>? Sections { get; set; }
     }

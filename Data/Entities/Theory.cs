@@ -22,13 +22,17 @@ namespace Data.Entities
         /// </summary>
         public string Name { get; set; } = string.Empty;
         /// <summary>
+        /// Содержимое теории в формате Markdown (если не используется файл)
+        /// </summary>
+        public string? Content { get; set; }
+        /// <summary>
         /// ID записи файла
         /// </summary>
-        public int FileId { get; set; }
+        public int? FileId { get; set; }
         /// <summary>
         /// Модель данных файла
         /// </summary>
-        public FileP File { get; set; } = null!;
+        public FileP? File { get; set; }
         /// <summary>
         /// Коллекция связок теории и тестов
         /// </summary>

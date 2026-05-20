@@ -45,12 +45,27 @@ namespace EnglishTestPlatform.Controllers
 
             if (theory == null) return NotFound();
 
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), theory.File.FilePath);
-            if (!System.IO.File.Exists(filePath))
-                return Content("Файл теории не найден.");
+            string html;
 
-            var markdown = await System.IO.File.ReadAllTextAsync(filePath);
-            var html = Markdown.ToHtml(markdown, new MarkdownPipelineBuilder().UseAdvancedExtensions().Build());
+            // Если есть контент (введен вручную), используем его
+            if (!string.IsNullOrEmpty(theory.Content))
+            {
+                html = Markdown.ToHtml(theory.Content, new MarkdownPipelineBuilder().UseAdvancedExtensions().Build());
+            }
+            // Иначе читаем из файла
+            else if (theory.File != null)
+            {
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), theory.File.FilePath);
+                if (!System.IO.File.Exists(filePath))
+                    return Content("Файл теории не найден.");
+
+                var markdown = await System.IO.File.ReadAllTextAsync(filePath);
+                html = Markdown.ToHtml(markdown, new MarkdownPipelineBuilder().UseAdvancedExtensions().Build());
+            }
+            else
+            {
+                return Content("Содержимое теории не найдено.");
+            }
 
             ViewBag.HtmlContent = html;
             ViewBag.RelatedTests = theory.TheoryTestRelations.Select(r => r.Test).ToList();

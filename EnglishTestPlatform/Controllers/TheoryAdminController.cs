@@ -58,25 +58,37 @@ namespace EnglishTestPlatform.Controllers
             // Проверяем валидацию
             if (ModelState.IsValid)
             {
-                // Проверяем файл
-                if (model.File == null || Path.GetExtension(model.File.FileName).ToLower() != ".md")
+                // Проверяем, что предоставлен либо файл, либо контент
+                if (model.File == null && string.IsNullOrWhiteSpace(model.Content))
                 {
-                    ModelState.AddModelError("File", "Загрузите файл в формате .md");
+                    ModelState.AddModelError("", "Загрузите файл .md или введите содержимое теории");
                     model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
                     return View(model);
                 }
 
                 try
                 {
-                    // Сохраняем файл
-                    var savedFile = await _fileService.SaveFileAsync(model.File, "Theories");
+                    FileP? savedFile = null;
+
+                    // Сохраняем файл, если он загружен
+                    if (model.File != null)
+                    {
+                        if (Path.GetExtension(model.File.FileName).ToLower() != ".md")
+                        {
+                            ModelState.AddModelError("File", "Файл должен быть в формате .md");
+                            model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                            return View(model);
+                        }
+                        savedFile = await _fileService.SaveFileAsync(model.File, "Theories");
+                    }
 
                     // Создаем сущность Theory
                     var theory = new Theory
                     {
                         Name = model.Name,
                         File = savedFile,
-                        FileId = savedFile.Id,
+                        FileId = savedFile?.Id,
+                        Content = model.Content,
                         SectionId = model.SectionId
                     };
 
@@ -128,6 +140,7 @@ namespace EnglishTestPlatform.Controllers
                 Id = theory.Id,
                 Name = theory.Name,
                 SectionId = theory.SectionId,
+                Content = theory.Content,
                 ExistingFileId = theory.FileId, // Сохраняем ID существующего файла
                 Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync()
             };
@@ -154,6 +167,14 @@ namespace EnglishTestPlatform.Controllers
             ModelState.Remove("File");
             ModelState.Remove("ExistingFileId");
 
+            // Проверяем, что предоставлен либо файл, либо контент
+            if (file == null && string.IsNullOrWhiteSpace(model.Content) && !model.ExistingFileId.HasValue)
+            {
+                ModelState.AddModelError("", "Загрузите файл .md или введите содержимое теории");
+                model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                return View(model);
+            }
+
             if (ModelState.IsValid)
             {
                 try
@@ -161,6 +182,7 @@ namespace EnglishTestPlatform.Controllers
                     // Обновляем название и раздел
                     theory.Name = model.Name;
                     theory.SectionId = model.SectionId;
+                    theory.Content = model.Content;
 
                     // Если загружен новый файл
                     if (file != null)

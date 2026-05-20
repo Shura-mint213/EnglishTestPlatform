@@ -18,13 +18,21 @@ namespace Data.Entities
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         /// <summary>
+        /// Название теста
+        /// </summary>
+        public string? Name { get; set; }
+        /// <summary>
+        /// Содержимое теста в JSON формате (если не используется файл)
+        /// </summary>
+        public string? Content { get; set; }
+        /// <summary>
         /// ID записи файла
         /// </summary>
-        public int FileId { get; set; }
+        public int? FileId { get; set; }
         /// <summary>
         /// Модель данных файла
         /// </summary>
-        public FileP File { get; set; } = null!;
+        public FileP? File { get; set; }
         /// <summary>
         /// Коллекция связок теории и тестов
         /// </summary>

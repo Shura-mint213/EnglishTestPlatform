@@ -16,7 +16,7 @@
     }
 
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-8">
             <form method="post" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label asp-for="Name" class="form-label">Название теории *</label>
@@ -39,10 +39,28 @@
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="File" class="form-label">Markdown файл (.md) *</label>
+                    <label class="form-label">Способ добавления теории</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="inputType" id="inputTypeFile" autocomplete="off" checked onchange="toggleInputType('file')">
+                        <label class="btn btn-outline-primary" for="inputTypeFile">📁 Загрузить файл</label>
+                        
+                        <input type="radio" class="btn-check" name="inputType" id="inputTypeContent" autocomplete="off" onchange="toggleInputType('content')">
+                        <label class="btn btn-outline-primary" for="inputTypeContent">✏️ Ввести текст</label>
+                    </div>
+                </div>
+
+                <div id="fileInputGroup" class="mb-3">
+                    <label asp-for="File" class="form-label">Markdown файл (.md)</label>
                     <input asp-for="File" type="file" class="form-control" accept=".md" />
                     <span asp-validation-for="File" class="text-danger"></span>
                     <small class="text-muted">Загрузите файл в формате Markdown (.md)</small>
+                </div>
+
+                <div id="contentInputGroup" class="mb-3" style="display: none;">
+                    <label asp-for="Content" class="form-label">Содержимое теории (Markdown) *</label>
+                    <textarea asp-for="Content" class="form-control" rows="15" placeholder="# Заголовок&#10;&#10;Введите ваш текст здесь...&#10;&#10;## Подзаголовок&#10;- Список&#10;- Элементы"></textarea>
+                    <span asp-validation-for="Content" class="text-danger"></span>
+                    <small class="text-muted">Введите содержимое в формате Markdown. Оставьте пустым, если загружаете файл.</small>
                 </div>
 
                 <div class="mb-3">
@@ -52,7 +70,7 @@
             </form>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card bg-light">
                 <div class="card-header">
                     <strong>📝 Информация о Markdown</strong>
@@ -77,4 +95,24 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        function toggleInputType(type) {
+            const fileGroup = document.getElementById('fileInputGroup');
+            const contentGroup = document.getElementById('contentInputGroup');
+            const fileInput = document.querySelector('#File');
+            const contentInput = document.querySelector('#Content');
+            
+            if (type === 'file') {
+                fileGroup.style.display = 'block';
+                contentGroup.style.display = 'none';
+                fileInput.required = true;
+                contentInput.required = false;
+            } else {
+                fileGroup.style.display = 'none';
+                contentGroup.style.display = 'block';
+                fileInput.required = false;
+                contentInput.required = true;
+            }
+        }
+    </script>
 }

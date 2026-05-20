@@ -32,7 +32,7 @@
     }
 
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-8">
             <form method="post" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label asp-for="Name" class="form-label">Название теста *</label>
@@ -55,10 +55,35 @@
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="File" class="form-label">JSON файл теста *</label>
+                    <label class="form-label">Способ добавления теста</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="inputType" id="inputTypeFile" autocomplete="off" checked onchange="toggleInputType('file')">
+                        <label class="btn btn-outline-primary" for="inputTypeFile">📁 Загрузить файл</label>
+                        
+                        <input type="radio" class="btn-check" name="inputType" id="inputTypeContent" autocomplete="off" onchange="toggleInputType('content')">
+                        <label class="btn btn-outline-primary" for="inputTypeContent">✏️ Ввести JSON</label>
+                    </div>
+                </div>
+
+                <div id="fileInputGroup" class="mb-3">
+                    <label asp-for="File" class="form-label">JSON файл теста</label>
                     <input asp-for="File" type="file" class="form-control" accept=".json" />
                     <span asp-validation-for="File" class="text-danger"></span>
                     <small class="text-muted">Загрузите JSON файл с вопросами теста</small>
+                </div>
+
+                <div id="contentInputGroup" class="mb-3" style="display: none;">
+                    <label asp-for="Content" class="form-label">Содержимое теста (JSON) *</label>
+                    <textarea asp-for="Content" class="form-control" rows="20" placeholder='[
+  {
+    "type": "MultipleChoice",
+    "question": "Вопрос?",
+    "options": ["Вариант 1", "Вариант 2"],
+    "correctAnswer": 0
+  }
+]'></textarea>
+                    <span asp-validation-for="Content" class="text-danger"></span>
+                    <small class="text-muted">Введите JSON с вопросами теста. Оставьте пустым, если загружаете файл.</small>
                 </div>
 
                 <div class="mb-3">
@@ -67,6 +92,24 @@
                 </div>
             </form>
         </div>
+
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <strong>📋 Формат JSON для теста</strong>
+                </div>
+                <div class="card-body">
+                    <p>Пример структуры теста:</p>
+                    <pre><code>{
+  "type": "MultipleChoice",
+  "question": "Вопрос?",
+  "options": ["A", "B"],
+  "correctAnswer": 0
+}</code></pre>
+                    <p class="text-muted small">Поддерживаются типы: MultipleChoice, MultipleSelect, FillIn, Matching</p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -74,4 +117,24 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        function toggleInputType(type) {
+            const fileGroup = document.getElementById('fileInputGroup');
+            const contentGroup = document.getElementById('contentInputGroup');
+            const fileInput = document.querySelector('#File');
+            const contentInput = document.querySelector('#Content');
+            
+            if (type === 'file') {
+                fileGroup.style.display = 'block';
+                contentGroup.style.display = 'none';
+                fileInput.required = true;
+                contentInput.required = false;
+            } else {
+                fileGroup.style.display = 'none';
+                contentGroup.style.display = 'block';
+                fileInput.required = false;
+                contentInput.required = true;
+            }
+        }
+    </script>
 }

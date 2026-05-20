@@ -70,36 +70,43 @@ namespace EnglishTestPlatform.Controllers
             Console.WriteLine($"Model Name: {model.Name}");
             Console.WriteLine($"Model SectionId: {model.SectionId}");
             Console.WriteLine($"File is null: {model.File == null}");
+            Console.WriteLine($"Content is null or empty: {string.IsNullOrWhiteSpace(model.Content)}");
 
             // Проверяем валидацию
             if (ModelState.IsValid)
             {
-                // Проверяем файл
-                if (model.File == null)
+                // Проверяем, что предоставлен либо файл, либо контент
+                if (model.File == null && string.IsNullOrWhiteSpace(model.Content))
                 {
-                    ModelState.AddModelError("File", "Загрузите файл теста");
-                    model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
-                    return View(model);
-                }
-
-                if (Path.GetExtension(model.File.FileName).ToLower() != ".json")
-                {
-                    ModelState.AddModelError("File", "Загрузите файл в формате .json");
+                    ModelState.AddModelError("", "Загрузите JSON файл или введите содержимое теста");
                     model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
                     return View(model);
                 }
 
                 try
                 {
-                    // Сохраняем файл
-                    var savedFile = await _fileService.SaveFileAsync(model.File, "Tests");
-                    Console.WriteLine($"File saved: {savedFile.FilePath}");
+                    FileP? savedFile = null;
+
+                    // Сохраняем файл, если он загружен
+                    if (model.File != null)
+                    {
+                        if (Path.GetExtension(model.File.FileName).ToLower() != ".json")
+                        {
+                            ModelState.AddModelError("File", "Файл должен быть в формате .json");
+                            model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                            return View(model);
+                        }
+                        savedFile = await _fileService.SaveFileAsync(model.File, "Tests");
+                        Console.WriteLine($"File saved: {savedFile.FilePath}");
+                    }
 
                     // Создаем сущность Test
                     var test = new Test
                     {
+                        Name = model.Name,
                         File = savedFile,
-                        FileId = savedFile.Id,
+                        FileId = savedFile?.Id,
+                        Content = model.Content,
                         SectionId = model.SectionId
                     };
 
@@ -152,8 +159,9 @@ namespace EnglishTestPlatform.Controllers
             var model = new TestViewModel
             {
                 Id = test.Id,
-                Name = test.File?.Name ?? "",
+                Name = test.Name ?? test.File?.Name ?? "",
                 SectionId = test.SectionId,
+                Content = test.Content,
                 ExistingFileId = test.FileId, // Сохраняем ID существующего файла
                 Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync()
             };
@@ -180,10 +188,21 @@ namespace EnglishTestPlatform.Controllers
             ModelState.Remove("File");
             ModelState.Remove("ExistingFileId");
 
+            // Проверяем, что предоставлен либо файл, либо контент
+            if (file == null && string.IsNullOrWhiteSpace(model.Content) && !model.ExistingFileId.HasValue)
+            {
+                ModelState.AddModelError("", "Загрузите JSON файл или введите содержимое теста");
+                model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                return View(model);
+            }
+
             if (ModelState.IsValid)
             {
                 try
                 {
+                    // Обновляем название
+                    test.Name = model.Name;
+
                     // Если загружен новый файл
                     if (file != null)
                     {
@@ -206,14 +225,19 @@ namespace EnglishTestPlatform.Controllers
                             test.FileId = newFile.Id;
                         }
                     }
-                    // Если файл не загружен, но у модели есть имя - обновляем только название в File
-                    else if (!string.IsNullOrEmpty(model.Name) && test.File != null)
+                    // Если файл не загружен, но ExistingFileId есть - сохраняем существующий файл
+                    else if (model.ExistingFileId.HasValue && test.FileId != model.ExistingFileId.Value)
                     {
-                        // Обновляем только название файла в БД, сам файл не меняем
-                        test.File.Name = model.Name;
+                        var existingFile = await _context.Files.FindAsync(model.ExistingFileId.Value);
+                        if (existingFile != null)
+                        {
+                            test.File = existingFile;
+                            test.FileId = existingFile.Id;
+                        }
                     }
 
-                    // Обновляем раздел
+                    // Обновляем контент и раздел
+                    test.Content = model.Content;
                     test.SectionId = model.SectionId;
 
                     if (ModelState.IsValid)

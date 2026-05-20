@@ -32,22 +32,66 @@ namespace EnglishTestPlatform.Controllers
         /// Отображает страницу с вопросами теста
         /// </summary>
         /// <param name="testName">Имя файла теста (без расширения)</param>
+        /// <param name="id">ID теста в базе данных</param>
         /// <returns>Представление с вопросами теста</returns>
         [HttpGet]
         [Route("Take")]
-        public async Task<IActionResult> Take(string testName)
+        public async Task<IActionResult> Take(string testName, int? id)
         {
-            // Проверяем, что имя теста указано
-            if (string.IsNullOrEmpty(testName))
+            // Проверяем, что имя теста или ID указаны
+            if (string.IsNullOrEmpty(testName) && !id.HasValue)
                 return RedirectToAction("Index", "Home");
 
             try
             {
-                // Загружаем тест из JSON файла
-                var test = await _testLoader.LoadTestFromDatabaseAsync(testName);
+                TestModel test;
 
-                // Передаём имя теста в представление через ViewBag
-                ViewBag.TestName = testName;
+                // Если передан ID, загружаем тест из БД (с контентом или файлом)
+                if (id.HasValue)
+                {
+                    var testEntity = await _context.Tests
+                        .Include(t => t.File)
+                        .FirstOrDefaultAsync(t => t.Id == id.Value);
+
+                    if (testEntity == null)
+                        return NotFound();
+
+                    // Если есть контент (введен вручную), используем его
+                    if (!string.IsNullOrEmpty(testEntity.Content))
+                    {
+                        test = JsonSerializer.Deserialize<TestModel>(testEntity.Content, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+                    }
+                    // Иначе загружаем из файла
+                    else if (testEntity.File != null)
+                    {
+                        var filePath = Path.Combine(Directory.GetCurrentDirectory(), testEntity.File.FilePath);
+                        if (!System.IO.File.Exists(filePath))
+                            throw new FileNotFoundException($"Файл теста не найден: {filePath}");
+
+                        var json = await System.IO.File.ReadAllTextAsync(filePath);
+                        test = JsonSerializer.Deserialize<TestModel>(json, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true,
+                            Converters = { new QuestionConverterService() }
+                        });
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Содержимое теста не найдено");
+                    }
+
+                    ViewBag.TestName = testName ?? testEntity.Name ?? $"Test_{id.Value}";
+                    ViewBag.TestId = id.Value;
+                }
+                else
+                {
+                    // Загружаем тест из JSON файла по имени (старый способ)
+                    test = await _testLoader.LoadTestFromDatabaseAsync(testName);
+                    ViewBag.TestName = testName;
+                }
 
                 return View(test);
             }

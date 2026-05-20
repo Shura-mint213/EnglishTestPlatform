@@ -3,22 +3,35 @@
     ViewData["Title"] = "Теоретические материалы";
 }
 <div class="container mt-4">
-    <h1>📚 Теоретические материалы</h1>
+    <div class="text-center mb-5">
+        <h1><i class="bi bi-book me-2"></i>📚 Теоретические материалы</h1>
+        <p class="lead text-muted">Изучайте теорию и закрепляйте знания с помощью тестов</p>
+    </div>
+    
     @if (!Model.Any())
     {
-        <div class="alert alert-info">Пока нет добавленных материалов.</div>
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle me-2"></i>Пока нет добавленных материалов.
+        </div>
     }
     else
     {
-        <div class="row">
+        <div class="row g-4">
             @foreach (var theory in Model)
             {
-                <div class="col-md-6 mb-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">@theory.File.Name</h5>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">
+                                <i class="bi bi-file-text me-2"></i>@theory.File.Name
+                            </h5>
+                            <p class="card-text text-muted flex-grow-1">
+                                Нажмите кнопку ниже, чтобы изучить материал
+                            </p>
                             <a href="@Url.Action("Details", "Theory", new { id = theory.Id })"
-                               class="btn btn-primary">Читать</a>
+                               class="btn btn-info mt-auto">
+                                <i class="bi bi-eye me-1"></i>Читать материал
+                            </a>
                         </div>
                     </div>
                 </div>

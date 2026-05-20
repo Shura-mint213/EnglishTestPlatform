@@ -6,7 +6,10 @@
 }
 
 <div class="container mt-4">
-    <h2>@Model.TestTitle</h2>
+    <div class="text-center mb-5">
+        <h1><i class="bi bi-clipboard-check me-2"></i>@Model.TestTitle</h1>
+        <p class="lead text-muted">Ответьте на все вопросы и нажмите "Завершить тест"</p>
+    </div>
 
     <form method="post" action="/Test/SubmitForm" id="testForm">
         <!-- Сохраняем имя теста -->
@@ -17,43 +20,48 @@
             var q = Model.Questions[i];
             var questionName = $"Questions[{i}]";
 
-            <div class="card mb-3 question-card" data-index="@i" data-type="@q.Type">
+            <div class="card mb-4 question-card" data-index="@i" data-type="@q.Type">
                 <div class="card-header">
-                    <strong>Вопрос @(i + 1):</strong> @q.Text
+                    <span class="badge bg-light text-dark me-2">Вопрос @(i + 1)</span>
+                    @q.Text
                 </div>
                 <div class="card-body">
                     @switch (q)
                     {
                         case MultipleChoiceQuestion mcq:
-                            foreach (var opt in mcq.Options)
-                            {
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio"
-                                           name="userAnswers[@i].Answer"
-                                           value="@opt"
-                                           id="q_@i" _ @opt />
-                                    <label class="form-check-label" for="q_@i" _@opt>
-                                        @opt
-                                    </label>
-                                </div>
-                            }
-                            // Сохраняем индекс вопроса
+                            <div class="options-container">
+                                @foreach (var opt in mcq.Options)
+                                {
+                                    <div class="form-check mb-3 p-3 border rounded hover-shadow cursor-pointer">
+                                        <input class="form-check-input" type="radio"
+                                               name="userAnswers[@i].Answer"
+                                               value="@opt"
+                                               id="q_@i_@opt.Replace(" ", "_")" />
+                                        <label class="form-check-label w-100 cursor-pointer" for="q_@i_@opt.Replace(" ", "_")">
+                                            @opt
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                            <!-- Сохраняем индекс вопроса -->
                             <input type="hidden" name="userAnswers[@i].QuestionIndex" value="@i" />
                             break;
 
                         case MultipleSelectQuestion msq:
-                            foreach (var opt in msq.Options)
-                            {
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox"
-                                           name="userAnswers[@i].SelectedOptions"
-                                           value="@opt"
-                                           id="q_@i" _ @opt />
-                                    <label class="form-check-label" for="q_@i" _ @opt">
-                                        @opt
-                                    </label>
-                                </div>
-                            }
+                            <div class="options-container">
+                                @foreach (var opt in msq.Options)
+                                {
+                                    <div class="form-check mb-3 p-3 border rounded hover-shadow cursor-pointer">
+                                        <input class="form-check-input" type="checkbox"
+                                               name="userAnswers[@i].SelectedOptions"
+                                               value="@opt"
+                                               id="q_@i_@opt.Replace(" ", "_")" />
+                                        <label class="form-check-label w-100 cursor-pointer" for="q_@i_@opt.Replace(" ", "_")">
+                                            @opt
+                                        </label>
+                                    </div>
+                                }
+                            </div>
                             <input type="hidden" name="userAnswers[@i].QuestionIndex" value="@i" />
                             break;
 
@@ -62,10 +70,17 @@
                                 @for (int j = 0; j < mq.Pairs.Count; j++)
                                 {
                                     var pair = mq.Pairs[j];
-                                    <div class="row mb-2">
-                                        <div class="col-5">@pair.Left</div>
-                                        <div class="col-7">
-                                            <select class="form-select"
+                                    <div class="row mb-3 align-items-center">
+                                        <div class="col-md-5">
+                                            <div class="p-3 bg-light rounded border">
+                                                <strong>@pair.Left</strong>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2 text-center">
+                                            <i class="bi bi-arrow-right fs-4 text-primary"></i>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <select class="form-select form-select-lg"
                                                     name="userAnswers[@i].Matches[@j].Value"
                                                     data-left="@pair.Left">
                                                 <option value="">-- Выберите соответствие --</option>
@@ -83,9 +98,11 @@
                             break;
 
                         case FillInQuestion fiq:
-                            <input type="text" class="form-control"
-                                   name="userAnswers[@i].Answer"
-                                   placeholder="Введите ответ..." />
+                            <div class="mb-3">
+                                <input type="text" class="form-control form-control-lg"
+                                       name="userAnswers[@i].Answer"
+                                       placeholder="Введите ваш ответ здесь..." />
+                            </div>
                             <input type="hidden" name="userAnswers[@i].QuestionIndex" value="@i" />
                             break;
                     }
@@ -93,12 +110,35 @@
             </div>
         }
 
-        <button type="submit" class="btn btn-success btn-lg">Завершить тест</button>
+        <div class="text-center mt-5 mb-5">
+            <button type="submit" class="btn btn-success btn-lg px-5 py-3">
+                <i class="bi bi-check-circle me-2"></i>Завершить тест
+            </button>
+        </div>
     </form>
 </div>
 
 @section Styles {
     <link rel="stylesheet" href="~/css/cheatsheet.css" />
+    <style>
+        .hover-shadow:hover {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            background-color: #f8f9fa;
+        }
+        
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        
+        .form-check-input:checked + .form-check-label {
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .options-container .form-check {
+            transition: all 0.3s ease;
+        }
+    </style>
 }
 
 @section Scripts {

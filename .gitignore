@@ -1,83 +1,45 @@
-# User-specific files
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-
+```
 # Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-x64/
-x86/
-bld/
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-
-# Visual Studio 2015 cache/options directory
-.vs/
-
-
-.git/
-
-# MSTest test Results
-[Tt]est[Rr]esult*/
-[Bb]uild[Ll]og.*
-
-# .NET Core
-project.lock.json
-project.fragment.lock.json
-artifacts/
-**/Properties/launchSettings.json
-
-# VS Code
-.vscode/
-
-*_i.c
-*_p.c
-*_i.h
-*.ilk
-*.meta
-*.obj
-*.pch
-*.pdb
-*.pgc
-*.pgd
-*.rsp
-*.sbr
-*.tlb
-*.tli
-*.tlh
-*.tmp
-*.tmp_proj
-*.log
-*.vspscc
-*.vssscc
-.builds
-*.pidb
-*.svclog
-*.scc
-
-# Click-Once directory
-publish/
-
-
 bin/
 obj/
-source/
+out/
 
-# ====================
-# SQLite Database Files
-# ====================
-*.db
-*.db-shm
-*.db-wal
-*.db-journal
-*.sqlite
-*.sqlite3
-*.sqlite-journal
+# User-specific files
+.vs/
+*.user
+*.userosscache
+*.suo
 
-**/Data/*.db
-**/Data/*.db-shm
-**/Data/*.db-wal
+# Log files
+*.log
+
+# Dependency directories
+node_modules/
+packages/
+
+# Environment specific settings
+.env
+.env.local
+.env.*
+!src/.env.example
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+*.cover
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Compiled files
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snupkg
+```

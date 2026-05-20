@@ -1,5 +1,5 @@
-```
-# Build artifacts
+
+# Build results
 bin/
 obj/
 *.dll
@@ -36,6 +36,34 @@ TestResults/
 # Publish folder
 publish/
 
-# User specific files
-.vs/
-```
+# Compiled files
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snupkg
+
+
+bin/
+obj/
+source/
+
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
+
+# SQLite Database Files
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+
+**/Data/*.db
+**/Data/*.db-shm
+**/Data/*.db-wal

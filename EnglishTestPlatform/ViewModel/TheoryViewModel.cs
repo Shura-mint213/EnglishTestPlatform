@@ -16,8 +16,12 @@ namespace EnglishTestPlatform.ViewModel
         /// </summary>
         public int? ExistingFileId { get; set; }
 
-        [Required(ErrorMessage = "Загрузите файл")]
         public IFormFile? File { get; set; }
+        
+        /// <summary>
+        /// Markdown контент теории (для ввода в редакторе)
+        /// </summary>
+        public string? MarkdownContent { get; set; }
 
         public List<Section>? Sections { get; set; }
     }

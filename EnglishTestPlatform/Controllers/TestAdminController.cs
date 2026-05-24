@@ -1,10 +1,11 @@
-﻿using Data;
-using Data.Entities;
+﻿using Data.Entities;
 using EnglishTestPlatform.Interfaces;
 using EnglishTestPlatform.Services;
 using EnglishTestPlatform.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using EnglishTestPlatform.Models;
 
 namespace EnglishTestPlatform.Controllers
 {
@@ -64,36 +65,90 @@ namespace EnglishTestPlatform.Controllers
             ModelState.Remove("Id");
             ModelState.Remove("Sections");
             ModelState.Remove("File");
+            ModelState.Remove("Questions");
 
             // Добавляем отладку
             Console.WriteLine($"=== CREATE TEST ===");
             Console.WriteLine($"Model Name: {model.Name}");
             Console.WriteLine($"Model SectionId: {model.SectionId}");
-            Console.WriteLine($"File is null: {model.File == null}");
+            Console.WriteLine($"Has File: {model.File != null}");
+            Console.WriteLine($"Has JsonContent: {!string.IsNullOrEmpty(model.JsonContent)}");
+            Console.WriteLine($"Has Questions: {model.Questions?.Count > 0}");
 
             // Проверяем валидацию
             if (ModelState.IsValid)
             {
-                // Проверяем файл
-                if (model.File == null)
-                {
-                    ModelState.AddModelError("File", "Загрузите файл теста");
-                    model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
-                    return View(model);
-                }
-
-                if (Path.GetExtension(model.File.FileName).ToLower() != ".json")
-                {
-                    ModelState.AddModelError("File", "Загрузите файл в формате .json");
-                    model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
-                    return View(model);
-                }
+                string? jsonContent = null;
 
                 try
                 {
-                    // Сохраняем файл
-                    var savedFile = await _fileService.SaveFileAsync(model.File, "Tests");
-                    Console.WriteLine($"File saved: {savedFile.FilePath}");
+                    // Вариант 1: Загрузка файла
+                    if (model.File != null)
+                    {
+                        if (Path.GetExtension(model.File.FileName).ToLower() != ".json")
+                        {
+                            ModelState.AddModelError("File", "Загрузите файл в формате .json");
+                            model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                            return View(model);
+                        }
+
+                        using (var reader = new StreamReader(model.File.OpenReadStream()))
+                        {
+                            jsonContent = await reader.ReadToEndAsync();
+                        }
+                    }
+                    // Вариант 2: Вставка JSON текстом
+                    else if (!string.IsNullOrEmpty(model.JsonContent))
+                    {
+                        jsonContent = model.JsonContent;
+                    }
+                    // Вариант 3: Создание через форму с вопросами
+                    else if (model.Questions != null && model.Questions.Count > 0)
+                    {
+                        var testModel = new TestModel
+                        {
+                            TestTitle = model.Name,
+                            Questions = ConvertQuestions(model.Questions)
+                        };
+                        jsonContent = JsonSerializer.Serialize(testModel, new JsonSerializerOptions 
+                        { 
+                            WriteIndented = true,
+                            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+                        });
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", "Загрузите файл, вставьте JSON или добавьте вопросы через форму");
+                        model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                        return View(model);
+                    }
+
+                    // Проверяем валидность JSON
+                    try
+                    {
+                        JsonSerializer.Deserialize<TestModel>(jsonContent);
+                    }
+                    catch (Exception jsonEx)
+                    {
+                        ModelState.AddModelError("", $"Неверный формат JSON: {jsonEx.Message}");
+                        model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                        return View(model);
+                    }
+
+                    // Сохраняем JSON в файл
+                    var fileName = $"{Guid.NewGuid()}_{model.Name}.json".Replace(" ", "_");
+                    var uploadsDir = Path.Combine(_env.ContentRootPath, "Source", "Tests");
+                    if (!Directory.Exists(uploadsDir))
+                        Directory.CreateDirectory(uploadsDir);
+                    
+                    var filePath = Path.Combine(uploadsDir, fileName);
+                    await System.IO.File.WriteAllTextAsync(filePath, jsonContent);
+
+                    var savedFile = new FileP
+                    {
+                        Name = model.Name,
+                        FilePath = Path.Combine("Source", "Tests", fileName)
+                    };
 
                     // Создаем сущность Test
                     var test = new Test
@@ -103,6 +158,7 @@ namespace EnglishTestPlatform.Controllers
                         SectionId = model.SectionId
                     };
 
+                    _context.Files.Add(savedFile);
                     _context.Tests.Add(test);
                     await _context.SaveChangesAsync();
 
@@ -135,6 +191,73 @@ namespace EnglishTestPlatform.Controllers
             model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
             return View(model);
         }
+
+        /// <summary>
+        /// Конвертация вопросов из формы в модель
+        /// </summary>
+        private List<Question> ConvertQuestions(List<QuestionFormModel> formQuestions)
+        {
+            var questions = new List<Question>();
+            
+            foreach (var fq in formQuestions)
+            {
+                switch (fq.Type)
+                {
+                    case "multiple_choice":
+                        var mcq = new MultipleChoiceQuestion
+                        {
+                            Type = "multiple_choice",
+                            Text = fq.Text,
+                            Explanation = fq.Explanation,
+                            Options = fq.Options.Where((_, i) => i < fq.CorrectAnswers.Count).ToList(),
+                            CorrectAnswer = fq.CorrectAnswers.IndexOf(true) >= 0 
+                                ? fq.CorrectAnswers.IndexOf(true) 
+                                : 0
+                        };
+                        questions.Add(mcq);
+                        break;
+                        
+                    case "multiple_select":
+                        var msq = new MultipleSelectQuestion
+                        {
+                            Type = "multiple_select",
+                            Text = fq.Text,
+                            Explanation = fq.Explanation,
+                            Options = fq.Options.ToList(),
+                            CorrectAnswers = fq.CorrectAnswers.Select((b, i) => b ? fq.Options[i] : null).Where(x => x != null).ToList()!
+                        };
+                        questions.Add(msq);
+                        break;
+                        
+                    case "matching":
+                        var mq = new MatchingQuestion
+                        {
+                            Type = "matching",
+                            Text = fq.Text,
+                            Explanation = fq.Explanation,
+                            LeftItems = fq.LeftItems.ToList(),
+                            RightItems = fq.RightItems.ToList()
+                        };
+                        questions.Add(mq);
+                        break;
+                        
+                    case "fill_in":
+                        var fiq = new FillInQuestion
+                        {
+                            Type = "fill_in",
+                            Text = fq.Text,
+                            Explanation = fq.Explanation,
+                            CorrectAnswers = fq.CorrectAnswersList.Where(x => !string.IsNullOrEmpty(x)).ToList()
+                        };
+                        questions.Add(fiq);
+                        break;
+                }
+            }
+            
+            return questions;
+        }
+
+        private readonly IWebHostEnvironment _env;
 
         /// <summary>
         /// Форма редактирования теста

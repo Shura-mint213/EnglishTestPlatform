@@ -1,10 +1,10 @@
-﻿using Data;
-using Data.Entities;
+﻿using Data.Entities;
 using EnglishTestPlatform.Interfaces;
 using EnglishTestPlatform.Services;
 using EnglishTestPlatform.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Markdig;
 
 namespace EnglishTestPlatform.Controllers
 {
@@ -12,11 +12,13 @@ namespace EnglishTestPlatform.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IFileService _fileService;
+        private readonly IWebHostEnvironment _env;
 
-        public TheoryAdminController(AppDbContext context, IFileService fileService)
+        public TheoryAdminController(AppDbContext context, IFileService fileService, IWebHostEnvironment env)
         {
             _context = context;
             _fileService = fileService;
+            _env = env;
         }
 
         /// <summary>
@@ -46,6 +48,30 @@ namespace EnglishTestPlatform.Controllers
         }
 
         /// <summary>
+        /// Предпросмотр Markdown
+        /// </summary>
+        [HttpPost]
+        public IActionResult Preview(string markdownContent)
+        {
+            if (string.IsNullOrEmpty(markdownContent))
+                return Content("");
+            
+            try
+            {
+                var pipeline = new MarkdownPipelineBuilder()
+                    .UseAdvancedExtensions()
+                    .Build();
+                
+                var html = Markdown.ToHtml(markdownContent, pipeline);
+                return Content(html);
+            }
+            catch (Exception ex)
+            {
+                return Content($"<div class='alert alert-danger'>Ошибка при обработке Markdown: {ex.Message}</div>");
+            }
+        }
+
+        /// <summary>
         /// Обработка создания теории
         /// </summary>
         [HttpPost]
@@ -58,18 +84,51 @@ namespace EnglishTestPlatform.Controllers
             // Проверяем валидацию
             if (ModelState.IsValid)
             {
-                // Проверяем файл
-                if (model.File == null || Path.GetExtension(model.File.FileName).ToLower() != ".md")
-                {
-                    ModelState.AddModelError("File", "Загрузите файл в формате .md");
-                    model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
-                    return View(model);
-                }
+                string? markdownContent = null;
 
                 try
                 {
-                    // Сохраняем файл
-                    var savedFile = await _fileService.SaveFileAsync(model.File, "Theories");
+                    // Вариант 1: Загрузка файла
+                    if (model.File != null)
+                    {
+                        if (Path.GetExtension(model.File.FileName).ToLower() != ".md")
+                        {
+                            ModelState.AddModelError("File", "Загрузите файл в формате .md");
+                            model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                            return View(model);
+                        }
+
+                        using (var reader = new StreamReader(model.File.OpenReadStream()))
+                        {
+                            markdownContent = await reader.ReadToEndAsync();
+                        }
+                    }
+                    // Вариант 2: Ввод Markdown через редактор
+                    else if (!string.IsNullOrEmpty(model.MarkdownContent))
+                    {
+                        markdownContent = model.MarkdownContent;
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", "Загрузите файл или введите контент в редакторе Markdown");
+                        model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                        return View(model);
+                    }
+
+                    // Сохраняем Markdown в файл
+                    var fileName = $"{Guid.NewGuid()}_{model.Name}.md".Replace(" ", "_");
+                    var uploadsDir = Path.Combine(_env.ContentRootPath, "Source", "Theories");
+                    if (!Directory.Exists(uploadsDir))
+                        Directory.CreateDirectory(uploadsDir);
+                    
+                    var filePath = Path.Combine(uploadsDir, fileName);
+                    await System.IO.File.WriteAllTextAsync(filePath, markdownContent);
+
+                    var savedFile = new FileP
+                    {
+                        Name = model.Name,
+                        FilePath = Path.Combine("Source", "Theories", fileName)
+                    };
 
                     // Создаем сущность Theory
                     var theory = new Theory
@@ -80,6 +139,7 @@ namespace EnglishTestPlatform.Controllers
                         SectionId = model.SectionId
                     };
 
+                    _context.Files.Add(savedFile);
                     _context.Theories.Add(theory);
                     await _context.SaveChangesAsync();
 

@@ -170,6 +170,7 @@
     
     <script>
         let previewTimeout;
+        let isSyncing = false; // Флаг для предотвращения циклической синхронизации
         
         // Функция предпросмотра
         function updatePreview() {
@@ -203,6 +204,32 @@
         
         // Слушаем изменения в редакторе
         document.getElementById('markdownEditor').addEventListener('input', updatePreview);
+        
+        // Синхронизация прокрутки между редактором и предпросмотром
+        function syncScroll(source, target) {
+            if (isSyncing) return;
+            isSyncing = true;
+            
+            // Вычисляем процент прокрутки источника
+            const scrollPercentage = source.scrollTop / (source.scrollHeight - source.clientHeight);
+            
+            // Применяем тот же процент к целевому элементу
+            target.scrollTop = scrollPercentage * (target.scrollHeight - target.clientHeight);
+            
+            setTimeout(() => { isSyncing = false; }, 50);
+        }
+        
+        // Добавляем обработчики прокрутки
+        const editor = document.getElementById('markdownEditor');
+        const preview = document.getElementById('markdownPreview');
+        
+        editor.addEventListener('scroll', function() {
+            syncScroll(editor, preview);
+        });
+        
+        preview.addEventListener('scroll', function() {
+            syncScroll(preview, editor);
+        });
         
         // Обработка отправки формы
         document.getElementById('editForm').addEventListener('submit', function(e) {

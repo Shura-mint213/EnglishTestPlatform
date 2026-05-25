@@ -15,33 +15,66 @@
         </div>
     }
 
-    <div class="row">
-        <div class="col-md-6">
-            <form method="post" enctype="multipart/form-data">
-                <input type="hidden" asp-for="Id" />
-                <input type="hidden" asp-for="ExistingFileId" />
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
-                <div class="mb-3">
-                    <label asp-for="Name" class="form-label">Название теории *</label>
-                    <input asp-for="Name" class="form-control" />
-                    <span asp-validation-for="Name" class="text-danger"></span>
-                    <small class="text-muted">Измените название, чтобы обновить отображаемое имя теории</small>
+    <!-- ✅ ФОРМА ОБЁРТЫВАЕТ ВСЁ СОДЕРЖИМОЕ -->
+    <form method="post" enctype="multipart/form-data" id="editForm">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="ExistingFileId" />
+        <input type="hidden" name="SectionId" value="@Model.SectionId" />
+
+        <!-- Табы для выбора способа редактирования -->
+        <ul class="nav nav-tabs mb-3" id="editMethodTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="editor-tab" data-bs-toggle="tab" data-bs-target="#editor-content" type="button" role="tab">
+                    ✏️ Редактор Markdown
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-content" type="button" role="tab">
+                    📁 Загрузка файла
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="editMethodTabsContent">
+            <!-- Редактор Markdown -->
+            <div class="tab-pane fade show active" id="editor-content" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>✏️ Ввод Markdown</h5>
+                            </div>
+                            <div class="card-body">
+                                <textarea class="form-control" id="markdownEditor" name="MarkdownContent" rows="20" placeholder="# Заголовок&#10;&#10;Ваш текст в формате Markdown...">@Model.MarkdownContent</textarea>
+                                <span asp-validation-for="MarkdownContent" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>👁️ Предпросмотр</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="markdownPreview" class="markdown-body" style="max-height: 500px; overflow-y: auto;">
+                                    <p class="text-muted">Здесь будет предпросмотр вашего Markdown...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <div class="mb-3">
-                    <label asp-for="SectionId" class="form-label">Раздел</label>
-                    <select asp-for="SectionId" class="form-select">
-                        <option value="">-- Без раздела --</option>
-                        @if (Model.Sections != null)
-                        {
-                            @foreach (var sec in Model.Sections)
-                            {
-                                <option value="@sec.Id">@sec.Name</option>
-                            }
-                        }
-                    </select>
-                </div>
-
+            <!-- Загрузка файла -->
+            <div class="tab-pane fade" id="file-content" role="tabpanel">
                 <div class="mb-3">
                     <label class="form-label">Текущий файл</label>
                     <div class="alert alert-info">
@@ -49,44 +82,224 @@
                         <small>Файл уже загружен и сохранён в системе</small>
                     </div>
                 </div>
-
                 <div class="mb-3">
-                    <label class="form-label">Заменить файл (опционально)</label>
-                    <input type="file" name="file" class="form-control" accept=".md" />
+                    <label asp-for="File" class="form-label">Заменить файл Markdown (.md)</label>
+                    <input asp-for="File" type="file" class="form-control" accept=".md" />
+                    <span asp-validation-for="File" class="text-danger"></span>
                     <small class="text-muted">Выберите новый MD файл, ТОЛЬКО если хотите заменить текущий. Оставьте пустым, чтобы сохранить существующий файл.</small>
-                </div>
-
-                <div class="mb-3">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save"></i> Сохранить изменения
-                    </button>
-                    <a href="@Url.Action("Index")" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Отмена
-                    </a>
-                </div>
-            </form>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card bg-warning bg-opacity-10">
-                <div class="card-header">
-                    <strong>⚠️ Внимание:</strong>
-                </div>
-                <div class="card-body">
-                    <ul class="mb-0">
-                        <li>Если вы не выбираете новый файл, существующий файл остаётся без изменений</li>
-                        <li>При загрузке нового файла старый будет удалён</li>
-                        <li>Убедитесь, что новый MD файл имеет правильную структуру Markdown</li>
-                        <li>Название теории можно менять независимо от файла</li>
-                    </ul>
                 </div>
             </div>
         </div>
+
+        <!-- Поля названия и раздела -->
+        <div class="mb-3 mt-3">
+            <label asp-for="Name" class="form-label">Название теории *</label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="SectionId" class="form-label">Раздел</label>
+            <select asp-for="SectionId" class="form-select">
+                <option value="">-- Без раздела --</option>
+                @if (Model.Sections != null)
+                {
+                    @foreach (var sec in Model.Sections)
+                    {
+                        <option value="@sec.Id">@sec.Name</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <!-- Кнопки отправки -->
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Сохранить изменения
+            </button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Отмена
+            </a>
+        </div>
+    </form>
+
+    <!-- Блок предупреждений -->
+    <div class="card bg-warning bg-opacity-10 mt-3">
+        <div class="card-header">
+            <strong>⚠️ Внимание:</strong>
+        </div>
+        <div class="card-body">
+            <ul class="mb-0">
+                <li>Если вы не выбираете новый файл и не редактируете контент, существующий файл остаётся без изменений</li>
+                <li>При загрузке нового файла старый будет удалён</li>
+                <li>Убедитесь, что новый MD файл имеет правильную структуру Markdown</li>
+                <li>Название теории можно менять независимо от файла</li>
+            </ul>
+        </div>
     </div>
+
+    <!-- Блок ошибок валидации (после формы) -->
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger mt-3">
+            <strong>Ошибки валидации:</strong>
+            <ul>
+                @foreach (var key in ViewData.ModelState.Keys)
+                {
+                    foreach (var error in ViewData.ModelState[key].Errors)
+                    {
+                        <li>@key: @error.ErrorMessage</li>
+                    }
+                }
+            </ul>
+        </div>
+    }
 </div>
 
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    
+    <script>
+        let previewTimeout;
+        
+        // Функция предпросмотра
+        function updatePreview() {
+            clearTimeout(previewTimeout);
+            previewTimeout = setTimeout(async () => {
+                const markdownContent = document.getElementById('markdownEditor').value;
+                const previewDiv = document.getElementById('markdownPreview');
+                
+                if (!markdownContent.trim()) {
+                    previewDiv.innerHTML = '<p class="text-muted">Здесь будет предпросмотр вашего Markdown...</p>';
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('@Url.Action("Preview", "TheoryAdmin")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                        },
+                        body: `markdownContent=${encodeURIComponent(markdownContent)}`
+                    });
+                    
+                    const html = await response.text();
+                    previewDiv.innerHTML = html || '<p class="text-muted">Пустой контент</p>';
+                } catch (error) {
+                    previewDiv.innerHTML = `<div class="alert alert-danger">Ошибка загрузки предпросмотра: ${error.message}</div>`;
+                }
+            }, 500); // Задержка 500мс после последнего ввода
+        }
+        
+        // Слушаем изменения в редакторе
+        document.getElementById('markdownEditor').addEventListener('input', updatePreview);
+        
+        // Обработка отправки формы
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            const activeTab = document.querySelector('#editMethodTabs .nav-link.active').id;
+            
+            if (activeTab === 'editor-tab') {
+                const markdownContent = document.getElementById('markdownEditor').value;
+                if (!markdownContent.trim()) {
+                    e.preventDefault();
+                    alert('Введите контент в редакторе Markdown!');
+                    return;
+                }
+            }
+        });
+        
+        // Инициализация предпросмотра при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            const initialContent = document.getElementById('markdownEditor').value;
+            if (initialContent && initialContent.trim()) {
+                updatePreview();
+            }
+        });
+    </script>
+    
+    <style>
+        .markdown-body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, "Helvetica", Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #2c3e50;
+            padding: 1rem;
+        }
+        
+        .markdown-body h1,
+        .markdown-body h2,
+        .markdown-body h3 {
+            font-weight: 700;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            color: #2c3e50;
+        }
+        
+        .markdown-body h1 {
+            font-size: 2em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.3em;
+        }
+        
+        .markdown-body h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        
+        .markdown-body code {
+            background-color: #f6f8fa;
+            border-radius: 4px;
+            padding: 0.2em 0.4em;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+        }
+        
+        .markdown-body pre {
+            background: #2d3748;
+            border-radius: 6px;
+            padding: 1rem;
+            overflow: auto;
+            color: #f8f8f2;
+        }
+        
+        .markdown-body pre code {
+            background: transparent;
+            padding: 0;
+            color: inherit;
+        }
+        
+        .markdown-body blockquote {
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+            padding: 0.5em 1em;
+            margin: 1em 0;
+            color: #5a6c7d;
+        }
+        
+        .markdown-body ul,
+        .markdown-body ol {
+            padding-left: 2em;
+        }
+        
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+        }
+        
+        .markdown-body th,
+        .markdown-body td {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e9ecef;
+        }
+        
+        .markdown-body th {
+            background: #667eea;
+            color: white;
+        }
+    </style>
 }

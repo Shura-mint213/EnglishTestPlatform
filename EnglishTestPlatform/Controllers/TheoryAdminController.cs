@@ -5,6 +5,7 @@ using EnglishTestPlatform.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Markdig;
+using Data;
 
 namespace EnglishTestPlatform.Controllers
 {
@@ -55,13 +56,13 @@ namespace EnglishTestPlatform.Controllers
         {
             if (string.IsNullOrEmpty(markdownContent))
                 return Content("");
-            
+
             try
             {
                 var pipeline = new MarkdownPipelineBuilder()
                     .UseAdvancedExtensions()
                     .Build();
-                
+
                 var html = Markdown.ToHtml(markdownContent, pipeline);
                 return Content(html);
             }
@@ -78,79 +79,88 @@ namespace EnglishTestPlatform.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(TheoryViewModel model)
         {
-            // Удаляем лишние ошибки валидации
+
+            // Удаляем лишние ошибки
             ModelState.Remove("Sections");
+            ModelState.Remove("ExistingFileId");
 
-            // Проверяем валидацию
-            if (ModelState.IsValid)
+            // ✅ Проверяем наличие контента ДО ModelState.IsValid
+            bool hasFile = model.File != null;
+            bool hasMarkdown = !string.IsNullOrWhiteSpace(model.MarkdownContent);
+
+            if (!hasFile && !hasMarkdown)
             {
-                string? markdownContent = null;
+                ModelState.AddModelError("MarkdownContent", "Загрузите файл или введите контент в редакторе Markdown");
+            }
 
-                try
+            if (!ModelState.IsValid)
+            {
+                model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                return View(model);
+            }
+
+            string? markdownContent = null;
+
+            try
+            {
+
+                if (hasFile)
                 {
-                    // Вариант 1: Загрузка файла
-                    if (model.File != null)
+                    if (Path.GetExtension(model.File.FileName).ToLower() != ".md")
                     {
-                        if (Path.GetExtension(model.File.FileName).ToLower() != ".md")
-                        {
-                            ModelState.AddModelError("File", "Загрузите файл в формате .md");
-                            model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
-                            return View(model);
-                        }
-
-                        using (var reader = new StreamReader(model.File.OpenReadStream()))
-                        {
-                            markdownContent = await reader.ReadToEndAsync();
-                        }
-                    }
-                    // Вариант 2: Ввод Markdown через редактор
-                    else if (!string.IsNullOrEmpty(model.MarkdownContent))
-                    {
-                        markdownContent = model.MarkdownContent;
-                    }
-                    else
-                    {
-                        ModelState.AddModelError("", "Загрузите файл или введите контент в редакторе Markdown");
+                        ModelState.AddModelError("File", "Загрузите файл в формате .md");
                         model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
                         return View(model);
                     }
-
-                    // Сохраняем Markdown в файл
-                    var fileName = $"{Guid.NewGuid()}_{model.Name}.md".Replace(" ", "_");
-                    var uploadsDir = Path.Combine(_env.ContentRootPath, "Source", "Theories");
-                    if (!Directory.Exists(uploadsDir))
-                        Directory.CreateDirectory(uploadsDir);
-                    
-                    var filePath = Path.Combine(uploadsDir, fileName);
-                    await System.IO.File.WriteAllTextAsync(filePath, markdownContent);
-
-                    var savedFile = new FileP
-                    {
-                        Name = model.Name,
-                        FilePath = Path.Combine("Source", "Theories", fileName)
-                    };
-
-                    // Создаем сущность Theory
-                    var theory = new Theory
-                    {
-                        Name = model.Name,
-                        File = savedFile,
-                        FileId = savedFile.Id,
-                        SectionId = model.SectionId
-                    };
-
-                    _context.Files.Add(savedFile);
-                    _context.Theories.Add(theory);
-                    await _context.SaveChangesAsync();
-
-                    TempData["Success"] = $"Теория «{model.Name}» успешно добавлена!";
-                    return RedirectToAction(nameof(Index));
+                    using var reader = new StreamReader(model.File.OpenReadStream());
+                    markdownContent = await reader.ReadToEndAsync();
                 }
-                catch (Exception ex)
+                else if (hasMarkdown)
                 {
-                    Console.WriteLine($"Ошибка при сохранении: {ex.Message}");
-                    ModelState.AddModelError("", $"Ошибка при сохранении: {ex.Message}");
+                    markdownContent = model.MarkdownContent;
                 }
+                else
+                {
+                    ModelState.AddModelError("", "Загрузите файл или введите контент в редакторе Markdown");
+                    model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                    return View(model);
+                }
+
+                // Сохраняем Markdown в файл
+                var fileName = $"{Guid.NewGuid()}_{model.Name}.md".Replace(" ", "_");
+                var uploadsDir = Path.Combine(_env.ContentRootPath, "Source", "Theories");
+                if (!Directory.Exists(uploadsDir))
+                    Directory.CreateDirectory(uploadsDir);
+
+                var filePath = Path.Combine(uploadsDir, fileName);
+                await System.IO.File.WriteAllTextAsync(filePath, markdownContent);
+
+                var savedFile = new FileP
+                {
+                    Name = model.Name,
+                    FilePath = Path.Combine("Source", "Theories", fileName)
+                };
+
+                // Создаем сущность Theory
+                var theory = new Theory
+                {
+                    Name = model.Name,
+                    File = savedFile,
+                    FileId = savedFile.Id,
+                    SectionId = model.SectionId
+                };
+
+                _context.Files.Add(savedFile);
+                _context.Theories.Add(theory);
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = $"Теория «{model.Name}» успешно добавлена!";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при сохранении: {ex.Message}");
+                ModelState.AddModelError("", $"Ошибка при сохранении: {ex.Message}");
             }
 
             // Выводим ошибки для отладки

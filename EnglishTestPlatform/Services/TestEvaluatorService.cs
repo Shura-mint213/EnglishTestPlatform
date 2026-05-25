@@ -50,10 +50,10 @@ namespace EnglishTestPlatform.Services
 
                     case FillInQuestion fiq:
                         var userText = userAnswerObj?.ToString()?.Trim() ?? "";
-                        var correctText = fiq.Correct.Trim();
+                        var correctText = fiq.Answers.ToString();
                         // Сравнение без учёта регистра и лишних пробелов
                         isCorrect = string.Equals(userText, correctText, StringComparison.OrdinalIgnoreCase);
-                        correctAnswerObj = fiq.Correct;
+                        correctAnswerObj = fiq.Answers;
                         break;
                 }
 

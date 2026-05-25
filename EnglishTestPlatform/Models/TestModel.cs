@@ -2,7 +2,7 @@
 {
     public class TestModel
     {
-        public string TestTitle { get; set; }
-        public List<Question> Questions { get; set; }
+        public string TestTitle { get; set; } = string.Empty;
+        public List<Question> Questions { get; set; } = new();
     }
 }

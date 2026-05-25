@@ -17,10 +17,11 @@ namespace EnglishTestPlatform.ViewModel
         public int? ExistingFileId { get; set; }
 
         public IFormFile? File { get; set; }
-        
+
         /// <summary>
         /// Markdown контент теории (для ввода в редакторе)
         /// </summary>
+        [StringLength(50_000, ErrorMessage = "Контент не может превышать 50 000 символов")]
         public string? MarkdownContent { get; set; }
 
         public List<Section>? Sections { get; set; }

@@ -2,6 +2,6 @@
 {
     public class FillInQuestion : Question
     {
-        public string Correct { get; set; }
+        public List<string> Answers { get; set; } = new(); // Правильные ответы для fill_in
     }
 }

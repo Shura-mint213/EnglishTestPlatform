@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using EnglishTestPlatform.Models;
+using Data;
 
 namespace EnglishTestPlatform.Controllers
 {
@@ -198,25 +199,24 @@ namespace EnglishTestPlatform.Controllers
         private List<Question> ConvertQuestions(List<QuestionFormModel> formQuestions)
         {
             var questions = new List<Question>();
-            
+
             foreach (var fq in formQuestions)
             {
                 switch (fq.Type)
                 {
                     case "multiple_choice":
+                        var correctIndex = fq.CorrectAnswers.IndexOf(true);
                         var mcq = new MultipleChoiceQuestion
                         {
                             Type = "multiple_choice",
                             Text = fq.Text,
                             Explanation = fq.Explanation,
                             Options = fq.Options.Where((_, i) => i < fq.CorrectAnswers.Count).ToList(),
-                            CorrectAnswer = fq.CorrectAnswers.IndexOf(true) >= 0 
-                                ? fq.CorrectAnswers.IndexOf(true) 
-                                : 0
+                            Correct = correctIndex >= 0 ? fq.Options[correctIndex] : string.Empty // Сохраняем текст ответа, а не индекс
                         };
                         questions.Add(mcq);
                         break;
-                        
+
                     case "multiple_select":
                         var msq = new MultipleSelectQuestion
                         {
@@ -224,36 +224,47 @@ namespace EnglishTestPlatform.Controllers
                             Text = fq.Text,
                             Explanation = fq.Explanation,
                             Options = fq.Options.ToList(),
-                            CorrectAnswers = fq.CorrectAnswers.Select((b, i) => b ? fq.Options[i] : null).Where(x => x != null).ToList()!
+                            Correct = fq.Options.Where((_, i) => i < fq.CorrectAnswers.Count && fq.CorrectAnswers[i]).ToList()
                         };
                         questions.Add(msq);
                         break;
-                        
+
                     case "matching":
+                        // Объединяем LeftItems и RightItems в пары
+                        var pairs = new List<MatchingPair>();
+                        var minCount = Math.Min(fq.LeftItems.Count, fq.RightItems.Count);
+                        for (int i = 0; i < minCount; i++)
+                        {
+                            pairs.Add(new MatchingPair
+                            {
+                                Left = fq.LeftItems[i],
+                                Right = fq.RightItems[i]
+                            });
+                        }
+
                         var mq = new MatchingQuestion
                         {
                             Type = "matching",
                             Text = fq.Text,
                             Explanation = fq.Explanation,
-                            LeftItems = fq.LeftItems.ToList(),
-                            RightItems = fq.RightItems.ToList()
+                            Pairs = pairs
                         };
                         questions.Add(mq);
                         break;
-                        
+
                     case "fill_in":
                         var fiq = new FillInQuestion
                         {
                             Type = "fill_in",
                             Text = fq.Text,
                             Explanation = fq.Explanation,
-                            CorrectAnswers = fq.CorrectAnswersList.Where(x => !string.IsNullOrEmpty(x)).ToList()
+                            Answers = fq.CorrectAnswersList.Where(x => !string.IsNullOrEmpty(x)).ToList()
                         };
                         questions.Add(fiq);
                         break;
                 }
             }
-            
+
             return questions;
         }
 

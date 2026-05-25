@@ -1,32 +1,68 @@
-```
-# Build artifacts
+ Build results
 bin/
 obj/
+out/
+
+# User-specific files
+.vs/
+*.user
+*.userosscache
+*.suo
+
+# Log files
+*.log
+
+# Dependency directories
+node_modules/
+packages/
+
+# Environment specific settings
+.env
+.env.local
+.env.*
+!src/.env.example
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+*.cover
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Compiled files
 *.dll
 *.exe
 *.pdb
-*.config
+*.nupkg
+*.snupkg
 
-# Dependencies
-packages/
-node_modules/
 
-# Logs
-*.log
+bin/
+obj/
+source/
 
-# Environment
-.env
-.env.local
-*.env.*
 
-# Editors
-.vscode/
-.idea/
-*.userprefs
-*.suo
-*.user
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
 
-# OS
-.DS_Store
-Thumbs.db
-```
+# SQLite Database Files
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+
+**/Data/*.db
+**/Data/*.db-shm
+**/Data/*.db-wal

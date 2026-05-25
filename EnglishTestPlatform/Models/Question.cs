@@ -4,8 +4,8 @@ namespace EnglishTestPlatform.Models
 {
     public abstract class Question
     {
-        public string Type { get; set; }
-        public string Text { get; set; }
-        public string Explanation { get; set; }
+        public string Type { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public string? Explanation { get; set; }
     }
 }

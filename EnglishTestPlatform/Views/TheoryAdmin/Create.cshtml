@@ -15,63 +15,67 @@
         </div>
     }
 
-    <!-- Табы для выбора способа создания -->
-    <ul class="nav nav-tabs mb-3" id="createMethodTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="editor-tab" data-bs-toggle="tab" data-bs-target="#editor-content" type="button" role="tab">
-                ✏️ Редактор Markdown
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-content" type="button" role="tab">
-                📁 Загрузка файла
-            </button>
-        </li>
-    </ul>
+    <!-- ✅ ФОРМА ОБЁРТЫВАЕТ ВСЁ СОДЕРЖИМОЕ -->
+    <form method="post" enctype="multipart/form-data" id="createForm">
+        <input type="hidden" name="SectionId" value="@Model.SectionId" />
 
-    <div class="tab-content" id="createMethodTabsContent">
-        <!-- Редактор Markdown -->
-        <div class="tab-pane fade show active" id="editor-content" role="tabpanel">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>✏️ Ввод Markdown</h5>
-                        </div>
-                        <div class="card-body">
-                            <textarea class="form-control" id="markdownEditor" name="MarkdownContent" rows="20" placeholder="# Заголовок&#10;&#10;Ваш текст в формате Markdown..."></textarea>
+        <!-- Табы для выбора способа создания -->
+        <ul class="nav nav-tabs mb-3" id="createMethodTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="editor-tab" data-bs-toggle="tab" data-bs-target="#editor-content" type="button" role="tab">
+                    ✏️ Редактор Markdown
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-content" type="button" role="tab">
+                    📁 Загрузка файла
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="createMethodTabsContent">
+            <!-- Редактор Markdown -->
+            <div class="tab-pane fade show active" id="editor-content" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>✏️ Ввод Markdown</h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- ✅ name="MarkdownContent" теперь внутри формы -->
+                                <textarea class="form-control" id="markdownEditor" name="MarkdownContent" rows="20" placeholder="# Заголовок&#10;&#10;Ваш текст в формате Markdown...">@Model.MarkdownContent</textarea>
+                                <span asp-validation-for="MarkdownContent" class="text-danger"></span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>👁️ Предпросмотр</h5>
-                        </div>
-                        <div class="card-body">
-                            <div id="markdownPreview" class="markdown-body" style="max-height: 500px; overflow-y: auto;">
-                                <p class="text-muted">Здесь будет предпросмотр вашего Markdown...</p>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>👁️ Предпросмотр</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="markdownPreview" class="markdown-body" style="max-height: 500px; overflow-y: auto;">
+                                    <p class="text-muted">Здесь будет предпросмотр вашего Markdown...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Загрузка файла -->
-        <div class="tab-pane fade" id="file-content" role="tabpanel">
-            <div class="mb-3">
-                <label asp-for="File" class="form-label">Markdown файл (.md)</label>
-                <input asp-for="File" type="file" class="form-control" accept=".md" />
-                <span asp-validation-for="File" class="text-danger"></span>
-                <small class="text-muted">Загрузите готовый файл в формате Markdown</small>
+            <!-- Загрузка файла -->
+            <div class="tab-pane fade" id="file-content" role="tabpanel">
+                <div class="mb-3">
+                    <label asp-for="File" class="form-label">Markdown файл (.md)</label>
+                    <input asp-for="File" type="file" class="form-control" accept=".md" />
+                    <span asp-validation-for="File" class="text-danger"></span>
+                    <small class="text-muted">Загрузите готовый файл в формате Markdown</small>
+                </div>
             </div>
         </div>
-    </div>
 
-    <form method="post" enctype="multipart/form-data" id="createForm">
-        <input type="hidden" name="SectionId" value="@Model.SectionId" />
-        
+        <!-- Поля названия и раздела -->
         <div class="mb-3 mt-3">
             <label asp-for="Name" class="form-label">Название теории *</label>
             <input asp-for="Name" class="form-control" />
@@ -92,12 +96,14 @@
             </select>
         </div>
 
+        <!-- Кнопки отправки -->
         <div class="mb-3">
             <button type="submit" class="btn btn-success">Сохранить</button>
             <a href="@Url.Action("Index")" class="btn btn-secondary">Отмена</a>
         </div>
     </form>
 
+    <!-- Блок ошибок валидации (после формы) -->
     @if (!ViewData.ModelState.IsValid)
     {
         <div class="alert alert-danger">

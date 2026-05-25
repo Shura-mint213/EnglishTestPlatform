@@ -388,3 +388,167 @@ h3 {
 main[role="main"] {
     padding-bottom: 2rem; /* Дополнительный отступ перед футером */
 }
+
+/* Навигационная панель для теории */
+.theory-nav-container {
+    position: relative;
+    display: flex;
+    gap: 2rem;
+}
+
+.theory-sidebar {
+    position: sticky;
+    top: 100px;
+    width: 280px;
+    min-width: 280px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    padding: 1.5rem;
+    transition: var(--transition);
+    z-index: 100;
+}
+
+.theory-sidebar.hidden {
+    opacity: 0;
+    transform: translateX(-20px);
+    pointer-events: none;
+    width: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+}
+
+.theory-sidebar-toggle {
+    position: fixed;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: var(--transition);
+}
+
+.theory-sidebar-toggle:hover {
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.theory-sidebar h5 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+    color: var(--dark-color);
+}
+
+.theory-nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.theory-nav-item {
+    margin-bottom: 0.5rem;
+}
+
+.theory-nav-link {
+    display: block;
+    padding: 0.6rem 0.8rem;
+    color: #555;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: var(--transition);
+    font-size: 0.95rem;
+    border-left: 3px solid transparent;
+}
+
+.theory-nav-link:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: var(--primary-color);
+    transform: translateX(5px);
+}
+
+.theory-nav-link.active {
+    background: rgba(102, 126, 234, 0.15);
+    color: var(--primary-color);
+    border-left-color: var(--primary-color);
+    font-weight: 600;
+}
+
+.theory-nav-link .nav-indent-1 { padding-left: 0.5rem; }
+.theory-nav-link .nav-indent-2 { padding-left: 1rem; }
+.theory-nav-link .nav-indent-3 { padding-left: 1.5rem; }
+
+.theory-content-wrapper {
+    flex: 1;
+    min-width: 0;
+}
+
+@media (max-width: 992px) {
+    .theory-sidebar {
+        position: fixed;
+        top: 80px;
+        left: 0;
+        width: 280px;
+        max-height: calc(100vh - 100px);
+        transform: translateX(-100%);
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .theory-sidebar.show-mobile {
+        transform: translateX(0);
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .theory-sidebar-toggle {
+        left: 10px;
+        top: auto;
+        bottom: 20px;
+        transform: none;
+    }
+
+    .theory-nav-container {
+        flex-direction: column;
+    }
+}
+
+/* Плавная прокрутка */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Отступ для якорей */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+    scroll-margin-top: 120px;
+    position: relative;
+}
+
+.markdown-body h1:hover::before,
+.markdown-body h2:hover::before,
+.markdown-body h3:hover::before,
+.markdown-body h4:hover::before,
+.markdown-body h5:hover::before,
+.markdown-body h6:hover::before {
+    content: '#';
+    position: absolute;
+    left: -25px;
+    color: var(--primary-color);
+    opacity: 0.5;
+}

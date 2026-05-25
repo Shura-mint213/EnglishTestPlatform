@@ -228,108 +228,128 @@ namespace EnglishTestPlatform.Controllers
 
             var theory = await _context.Theories
                 .Include(t => t.File)
+                .Include(t => t.Section)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (theory == null) return NotFound();
 
+            Console.WriteLine($"🔍 THEORY #{id}:");
+            Console.WriteLine($"   SectionId (из БД): {theory.SectionId?.ToString() ?? "NULL"}");
+            Console.WriteLine($"   Section.Name: {theory.Section?.Name ?? "NULL"}");
+
+            // Очищаем поля, которые не должны валидироваться автоматически
             ModelState.Remove("Sections");
             ModelState.Remove("File");
             ModelState.Remove("ExistingFileId");
+            ModelState.Remove("MarkdownContent");
 
-            // ✅ Проверяем наличие контента ДО ModelState.IsValid
-            bool hasFile = file != null;
-            bool hasMarkdown = !string.IsNullOrWhiteSpace(model.MarkdownContent);
+            // Определяем источник контента
+            bool hasNewFile = file != null && file.Length > 0;
+            bool hasEditedContent = !string.IsNullOrWhiteSpace(model.MarkdownContent);
 
-            if (!hasFile && !hasMarkdown && theory.File == null)
+            // Валидация: должен быть хотя бы один источник контента
+            if (!hasNewFile && !hasEditedContent && theory.File == null)
             {
-                ModelState.AddModelError("MarkdownContent", "Загрузите файл или введите контент в редакторе Markdown");
+                ModelState.AddModelError("", "Загрузите файл или введите контент в редакторе");
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                try
-                {
-                    // Обновляем название и раздел
-                    theory.Name = model.Name;
-                    theory.SectionId = model.SectionId;
-
-                    string? markdownContent = null;
-
-                    // Если загружен новый файл
-                    if (file != null)
-                    {
-                        if (Path.GetExtension(file.FileName).ToLower() != ".md")
-                        {
-                            ModelState.AddModelError("File", "Файл должен быть .md");
-                        }
-                        else
-                        {
-                            using var reader = new StreamReader(file.OpenReadStream());
-                            markdownContent = await reader.ReadToEndAsync();
-                        }
-                    }
-                    // Если используется контент из редактора
-                    else if (hasMarkdown)
-                    {
-                        markdownContent = model.MarkdownContent;
-                    }
-
-                    // Если есть новый контент (из файла или редактора)
-                    if (markdownContent != null)
-                    {
-                        // Удаляем старый файл если он существует
-                        if (theory.File != null)
-                        {
-                            _fileService.DeleteFile(theory.File);
-                            _context.Files.Remove(theory.File);
-                        }
-
-                        // Сохраняем новый контент в файл
-                        var fileName = $"{Guid.NewGuid()}_{model.Name}.md".Replace(" ", "_");
-                        var uploadsDir = Path.Combine(_env.ContentRootPath, "Source", "Theories");
-                        if (!Directory.Exists(uploadsDir))
-                            Directory.CreateDirectory(uploadsDir);
-
-                        var filePath = Path.Combine(uploadsDir, fileName);
-                        await System.IO.File.WriteAllTextAsync(filePath, markdownContent);
-
-                        var savedFile = new FileP
-                        {
-                            Name = model.Name,
-                            FilePath = Path.Combine("Source", "Theories", fileName)
-                        };
-
-                        _context.Files.Add(savedFile);
-                        theory.File = savedFile;
-                        theory.FileId = savedFile.Id;
-                    }
-                    // Если файл не загружен и нет нового контента, но ExistingFileId есть - сохраняем существующий файл
-                    else if (model.ExistingFileId.HasValue && theory.FileId != model.ExistingFileId.Value)
-                    {
-                        var existingFile = await _context.Files.FindAsync(model.ExistingFileId.Value);
-                        if (existingFile != null)
-                        {
-                            theory.File = existingFile;
-                            theory.FileId = existingFile.Id;
-                        }
-                    }
-
-                    if (ModelState.IsValid)
-                    {
-                        await _context.SaveChangesAsync();
-                        TempData["Success"] = $"Теория «{model.Name}» успешно обновлена!";
-                        return RedirectToAction(nameof(Index));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Ошибка при обновлении: {ex.Message}");
-                    ModelState.AddModelError("", $"Ошибка при обновлении: {ex.Message}");
-                }
+                model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                return View(model);
             }
 
+            try
+            {
+                // Обновляем базовые поля
+                theory.Name = model.Name;
+                theory.SectionId = model.SectionId;
+
+                string? newContent = null;
+
+                // 1️⃣ Если загружен новый файл
+                if (hasNewFile)
+                {
+                    if (Path.GetExtension(file.FileName).ToLower() != ".md")
+                    {
+                        ModelState.AddModelError("File", "Файл должен быть в формате .md");
+                        model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
+                        return View(model);
+                    }
+                    using var reader = new StreamReader(file.OpenReadStream());
+                    newContent = await reader.ReadToEndAsync();
+                }
+                // 2️⃣ Если контент изменён в редакторе
+                else if (hasEditedContent)
+                {
+                    newContent = model.MarkdownContent;
+                }
+
+                // 🔄 Если есть новый контент И есть существующий файл — ОБНОВЛЯЕМ контент в том же файле
+                if (newContent != null && theory.File != null)
+                {
+                    var fullPath = Path.Combine(_env.ContentRootPath, theory.File.FilePath);
+
+                    // Создаём директорию если нет
+                    var directory = Path.GetDirectoryName(fullPath);
+                    if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                    {
+                        Directory.CreateDirectory(directory);
+                    }
+
+                    // ✅ ПЕРЕЗАПИСЫВАЕМ контент в существующий файл (не создаём новый!)
+                    await System.IO.File.WriteAllTextAsync(fullPath, newContent);
+
+                    // Обновляем отображаемое имя файла если изменилось название теории
+                    theory.File.Name = model.Name;
+                    // FilePath остаётся прежним — это тот же файл, просто с новым контентом
+                }
+                // 🆕 Если контента нет, но пользователь загрузил новый файл (теория была без файла)
+                else if (newContent != null && theory.File == null)
+                {
+                    var fileName = $"{Guid.NewGuid()}_{SanitizeFileName(model.Name)}.md";
+                    var uploadsDir = Path.Combine(_env.ContentRootPath, "Source", "Theories");
+                    if (!Directory.Exists(uploadsDir))
+                        Directory.CreateDirectory(uploadsDir);
+
+                    var filePath = Path.Combine(uploadsDir, fileName);
+                    await System.IO.File.WriteAllTextAsync(filePath, newContent);
+
+                    var savedFile = new FileP
+                    {
+                        Name = model.Name,
+                        FilePath = Path.Combine("Source", "Theories", fileName).Replace("\\", "/")
+                    };
+
+                    _context.Files.Add(savedFile);
+                    await _context.SaveChangesAsync(); // Сохраняем чтобы получить Id
+
+                    theory.File = savedFile;
+                    theory.FileId = savedFile.Id;
+                }
+                // 📦 Если ничего не изменилось — оставляем файл как есть (ничего не делаем)
+
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"Теория «{model.Name}» успешно обновлена!";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка при обновлении: {ex.Message}");
+                Console.WriteLine($"📋 Stack trace: {ex.StackTrace}");
+                ModelState.AddModelError("", $"Ошибка при сохранении: {ex.Message}");
+            }
+
+            // Возвращаем форму с ошибками
             model.Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync();
             return View(model);
+        }
+
+        // Вспомогательный метод для безопасных имён файлов
+        private string SanitizeFileName(string fileName)
+        {
+            var invalidChars = Path.GetInvalidFileNameChars();
+            return string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries)).Trim();
         }
 
         /// <summary>

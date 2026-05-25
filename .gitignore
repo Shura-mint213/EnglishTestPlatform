@@ -1,72 +1,68 @@
-# Compiled and build artifacts
-*.pyc
-__pycache__/
-*.o
-*.obj
-*.dll
-*.exe
-*.so
-*.a
-*.class
-*.out
+# Build results
+bin/
+obj/
+out/
 
-# Dependencies
-.venv/
-venv/
-node_modules/
-dist/
-build/
-target/
-.gradle/
-.mypy_cache/
-.pytest_cache/
+# User-specific files
+.vs/
+*.user
+*.userosscache
+*.suo
 
-# Logs and temp files
+# Log files
 *.log
-*.tmp
-*.swp
-*.swo
 
-# Environment
+# Dependency directories
+node_modules/
+packages/
+
+# Environment specific settings
 .env
 .env.local
-*.env.*
+.env.*
+!src/.env.example
 
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# System files
+# OS generated files
 .DS_Store
 Thumbs.db
 
-# Coverage
+# Testing
 coverage/
-htmlcov/
-.coverage
+*.cover
+*.log
 
-# Compressed files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+# IDE
+.vscode/
+.idea/
+
+# Compiled files
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snupkg
+
+
+bin/
+obj/
+source/
+
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
+
+# SQLite Database Files
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+
+**/Data/*.db
+**/Data/*.db-shm
+**/Data/*.db-wal

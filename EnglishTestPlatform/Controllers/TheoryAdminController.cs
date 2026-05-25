@@ -193,12 +193,24 @@ namespace EnglishTestPlatform.Controllers
 
             if (theory == null) return NotFound();
 
+            // Читаем содержимое существующего файла
+            string markdownContent = "";
+            if (theory.File != null && !string.IsNullOrEmpty(theory.File.FilePath))
+            {
+                var fullPath = Path.Combine(_env.ContentRootPath, theory.File.FilePath);
+                if (System.IO.File.Exists(fullPath))
+                {
+                    markdownContent = await System.IO.File.ReadAllTextAsync(fullPath);
+                }
+            }
+
             var model = new TheoryViewModel
             {
                 Id = theory.Id,
                 Name = theory.Name,
                 SectionId = theory.SectionId,
                 ExistingFileId = theory.FileId, // Сохраняем ID существующего файла
+                MarkdownContent = markdownContent, // Загружаем существующий контент
                 Sections = await _context.Sections.OrderBy(s => s.Name).ToListAsync()
             };
 
@@ -224,6 +236,15 @@ namespace EnglishTestPlatform.Controllers
             ModelState.Remove("File");
             ModelState.Remove("ExistingFileId");
 
+            // ✅ Проверяем наличие контента ДО ModelState.IsValid
+            bool hasFile = file != null;
+            bool hasMarkdown = !string.IsNullOrWhiteSpace(model.MarkdownContent);
+
+            if (!hasFile && !hasMarkdown && theory.File == null)
+            {
+                ModelState.AddModelError("MarkdownContent", "Загрузите файл или введите контент в редакторе Markdown");
+            }
+
             if (ModelState.IsValid)
             {
                 try
@@ -231,6 +252,8 @@ namespace EnglishTestPlatform.Controllers
                     // Обновляем название и раздел
                     theory.Name = model.Name;
                     theory.SectionId = model.SectionId;
+
+                    string? markdownContent = null;
 
                     // Если загружен новый файл
                     if (file != null)
@@ -241,20 +264,46 @@ namespace EnglishTestPlatform.Controllers
                         }
                         else
                         {
-                            // Удаляем старый файл
-                            if (theory.File != null)
-                            {
-                                _fileService.DeleteFile(theory.File);
-                                _context.Files.Remove(theory.File);
-                            }
-
-                            // Сохраняем новый
-                            var newFile = await _fileService.SaveFileAsync(file, "Theories");
-                            theory.File = newFile;
-                            theory.FileId = newFile.Id;
+                            using var reader = new StreamReader(file.OpenReadStream());
+                            markdownContent = await reader.ReadToEndAsync();
                         }
                     }
-                    // Если файл не загружен, но ExistingFileId есть - сохраняем существующий файл
+                    // Если используется контент из редактора
+                    else if (hasMarkdown)
+                    {
+                        markdownContent = model.MarkdownContent;
+                    }
+
+                    // Если есть новый контент (из файла или редактора)
+                    if (markdownContent != null)
+                    {
+                        // Удаляем старый файл если он существует
+                        if (theory.File != null)
+                        {
+                            _fileService.DeleteFile(theory.File);
+                            _context.Files.Remove(theory.File);
+                        }
+
+                        // Сохраняем новый контент в файл
+                        var fileName = $"{Guid.NewGuid()}_{model.Name}.md".Replace(" ", "_");
+                        var uploadsDir = Path.Combine(_env.ContentRootPath, "Source", "Theories");
+                        if (!Directory.Exists(uploadsDir))
+                            Directory.CreateDirectory(uploadsDir);
+
+                        var filePath = Path.Combine(uploadsDir, fileName);
+                        await System.IO.File.WriteAllTextAsync(filePath, markdownContent);
+
+                        var savedFile = new FileP
+                        {
+                            Name = model.Name,
+                            FilePath = Path.Combine("Source", "Theories", fileName)
+                        };
+
+                        _context.Files.Add(savedFile);
+                        theory.File = savedFile;
+                        theory.FileId = savedFile.Id;
+                    }
+                    // Если файл не загружен и нет нового контента, но ExistingFileId есть - сохраняем существующий файл
                     else if (model.ExistingFileId.HasValue && theory.FileId != model.ExistingFileId.Value)
                     {
                         var existingFile = await _context.Files.FindAsync(model.ExistingFileId.Value);

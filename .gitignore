@@ -1,71 +1,47 @@
-# Build results
-bin/
-obj/
-out/
+```
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
+*.dll
+*.so
+*.exe
+*.class
+*.out
 
-# User-specific files
-.vs/
-*.user
-*.userosscache
-*.suo
-
-# Log files
-*.log
-
-# Dependency directories
+# Dependencies
 node_modules/
-packages/
-
-# Environment specific settings
+venv/
+.venv/
 .env
 .env.local
-.env.*
-!src/.env.example
+*.env.*
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Editors
+.vscode/
+.idea/
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
 
 # OS generated files
 .DS_Store
 Thumbs.db
 
-# Testing
-coverage/
-*.cover
-*.log
-
-# IDE
-.vscode/
-.idea/
-
-# Compiled files
-*.dll
-*.exe
-*.pdb
-*.nupkg
-*.snupkg
-
-
-bin/
-obj/
-source/
-
-
-# .NET Core
-project.lock.json
-project.fragment.lock.json
-artifacts/
-**/Properties/launchSettings.json
-
-# SQLite Database Files
-*.db
-*.db-shm
-*.db-wal
-*.db-journal
-*.sqlite
-*.sqlite3
-*.sqlite-journal
-
-**/Data/*.db
-**/Data/*.db-shm
-**/Data/*.db-wal
-
-**/*.db
-Data/*.db
+# Build directories (for various languages)
+dist/
+build/
+target/
+.gradle/
+.mypy_cache/
+.pytest_cache/
+```

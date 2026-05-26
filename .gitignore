@@ -66,3 +66,6 @@ artifacts/
 **/Data/*.db
 **/Data/*.db-shm
 **/Data/*.db-wal
+
+**/*.db
+Data/*.db

@@ -115,9 +115,11 @@
                                     <a class="dropdown-item" href="#" data-command="image">🖼️ Вставить изображение <small class="text-muted">(Ctrl+Shift+I)</small></a>
                                 </div>
                                 <!-- Редактируемая область с contenteditable -->
-                                <div id="markdownEditor" class="form-control markdown-editor" contenteditable="true" 
+                                <div id="markdownEditor" class="form-control markdown-editor" contenteditable="true"
                                      style="min-height: 400px; max-height: 600px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.6;"
-                                     placeholder="# Заголовок&#10;&#10;Ваш текст в формате Markdown...">@Model.MarkdownContent</div>
+                                     placeholder="# Заголовок&#10;&#10;Ваш текст в формате Markdown...">
+                                    @Model.MarkdownContent
+                                </div>
                                 <!-- Скрытое поле для отправки данных -->
                                 <input type="hidden" name="MarkdownContent" id="hiddenMarkdownContent" value="@Model.MarkdownContent" />
                                 <span asp-validation-for="MarkdownContent" class="text-danger"></span>
@@ -210,38 +212,41 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-    
+
     <script>
         let previewTimeout;
         let isSyncing = false;
         let contextMenuVisible = false;
-        
+
         // Получаем элементы
         const editor = document.getElementById('markdownEditor');
         const hiddenField = document.getElementById('hiddenMarkdownContent');
         const contextMenu = document.getElementById('contextMenu');
         const toolbarButtons = document.querySelectorAll('.toolbar button[data-command]');
         const contextMenuItems = document.querySelectorAll('#contextMenu a[data-command]');
-        
+
         // Функция обновления скрытого поля перед отправкой формы
         function updateHiddenField() {
             if (editor) {
-                hiddenField.value = editor.innerHTML;
+                hiddenField.value = editor.innerText
+                    .replace(/\u00A0/g, ' ')
+                    .trimEnd();
             }
         }
-        
+
         // Функция предпросмотра
         function updatePreview() {
             clearTimeout(previewTimeout);
             previewTimeout = setTimeout(async () => {
-                const markdownContent = editor.innerHTML;
+                const markdownContent = editor.innerText
+                    .replace(/\u00A0/g, ' ');
                 const previewDiv = document.getElementById('markdownPreview');
-                
-                if (!markdownContent.trim() || markdownContent === '<br>') {
+
+                if (!markdownContent.trim()) {
                     previewDiv.innerHTML = '<p class="text-muted">Здесь будет предпросмотр вашего Markdown...</p>';
                     return;
                 }
-                
+
                 try {
                     const response = await fetch('@Url.Action("Preview", "TheoryAdmin")', {
                         method: 'POST',
@@ -251,7 +256,7 @@
                         },
                         body: `markdownContent=${encodeURIComponent(markdownContent)}`
                     });
-                    
+
                     const html = await response.text();
                     previewDiv.innerHTML = html || '<p class="text-muted">Пустой контент</p>';
                 } catch (error) {
@@ -259,11 +264,11 @@
                 }
             }, 500);
         }
-        
+
         // Применение форматирования к выделенному тексту
         function applyCommand(command, value = null) {
             editor.focus();
-            
+
             switch(command) {
                 case 'bold':
                     document.execCommand('bold', false, value);
@@ -317,19 +322,19 @@
                 default:
                     document.execCommand(command, false, value);
             }
-            
+
             updateHiddenField();
             updatePreview();
         }
-        
+
         // Обертка текста маркерами Markdown
         function wrapWithMarkdown(prefix, suffix = null) {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
-            
+
             const range = selection.getRangeAt(0);
             const selectedText = range.toString();
-            
+
             if (selectedText.length > 0) {
                 suffix = suffix || prefix;
                 const wrappedText = prefix + selectedText + suffix;
@@ -339,7 +344,7 @@
                 suffix = suffix || prefix;
                 const template = prefix + 'текст' + suffix;
                 document.execCommand('insertText', false, template);
-                
+
                 // Выделяем "текст" для замены
                 setTimeout(() => {
                     const newSelection = window.getSelection();
@@ -354,25 +359,25 @@
                 }, 10);
             }
         }
-        
+
         // Форматирование заголовков
         function formatHeading(prefix) {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
-            
+
             const range = selection.getRangeAt(0);
             let node = range.startContainer;
-            
+
             // Находим родительский элемент строки
             while (node && node.nodeType !== 1) {
                 node = node.parentNode;
             }
-            
+
             if (node) {
                 const text = node.textContent || node.innerText;
                 const lines = text.split('\n');
                 const currentLineIndex = getCurrentLineIndex(range);
-                
+
                 if (currentLineIndex >= 0 && currentLineIndex < lines.length) {
                     const currentLine = lines[currentLineIndex];
                     if (!currentLine.startsWith(prefix)) {
@@ -382,12 +387,12 @@
                 }
             }
         }
-        
+
         // Получение индекса текущей строки
         function getCurrentLineIndex(range) {
             const editorRect = editor.getBoundingClientRect();
             const rangeRect = range.getClientRects()[0];
-            
+
             if (rangeRect) {
                 const lineHeight = 22; // Примерная высота строки
                 const relativeY = rangeRect.top - editorRect.top + editor.scrollTop;
@@ -395,51 +400,69 @@
             }
             return 0;
         }
-        
+
         // Форматирование списков
-        function formatList(prefix) {
+                function formatList(prefix) {
             const selection = window.getSelection();
-            if (!selection.rangeCount) return;
-            
-            const range = selection.getRangeAt(0);
-            let node = range.startContainer;
-            
-            while (node && node.nodeType !== 1) {
-                node = node.parentNode;
+
+            if (!selection.rangeCount)
+                return;
+
+            const selectedText = selection.toString();
+
+            if (selectedText.trim()) {
+
+                const lines = selectedText
+                    .split(/\r?\n/)
+                    .filter(x => x.trim());
+
+                const formatted = lines.map((line, index) => {
+
+                    if (prefix === '1. ')
+                        return `${index + 1}. ${line.trim()}`;
+
+                    return `- ${line.trim()}`;
+
+                }).join('\n');
+
+                document.execCommand(
+                    'insertText',
+                    false,
+                    formatted
+                );
+
             }
-            
-            if (node) {
-                const text = node.textContent || node.innerText;
-                const lines = text.split('\n');
-                const currentLineIndex = getCurrentLineIndex(range);
-                
-                if (currentLineIndex >= 0 && currentLineIndex < lines.length) {
-                    const currentLine = lines[currentLineIndex].trim();
-                    if (!currentLine.startsWith(prefix) && !currentLine.startsWith('- ') && !/^\d+\.\s/.test(currentLine)) {
-                        lines[currentLineIndex] = prefix + currentLine;
-                        node.textContent = lines.join('\n');
-                    }
-                }
+            else {
+
+                document.execCommand(
+                    'insertText',
+                    false,
+                    prefix
+                );
+
             }
+
+            updateHiddenField();
+            updatePreview();
         }
-        
+
         // Форматирование цитат
         function formatBlockquote(prefix) {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
-            
+
             const range = selection.getRangeAt(0);
             let node = range.startContainer;
-            
+
             while (node && node.nodeType !== 1) {
                 node = node.parentNode;
             }
-            
+
             if (node) {
                 const text = node.textContent || node.innerText;
                 const lines = text.split('\n');
                 const currentLineIndex = getCurrentLineIndex(range);
-                
+
                 if (currentLineIndex >= 0 && currentLineIndex < lines.length) {
                     const currentLine = lines[currentLineIndex].trim();
                     if (!currentLine.startsWith(prefix)) {
@@ -449,7 +472,7 @@
                 }
             }
         }
-        
+
         // Вставка ссылки
         function insertLink() {
             const url = prompt('Введите URL ссылки:', 'https://');
@@ -460,7 +483,7 @@
                 document.execCommand('insertText', false, markdownLink);
             }
         }
-        
+
         // Вставка изображения
         function insertImage() {
             const url = prompt('Введите URL изображения:', 'https://');
@@ -469,7 +492,7 @@
                 document.execCommand('insertText', false, markdownImage);
             }
         }
-        
+
         // Обработчики кнопок панели инструментов
         toolbarButtons.forEach(button => {
             button.addEventListener('click', (e) => {
@@ -478,7 +501,7 @@
                 applyCommand(command);
             });
         });
-        
+
         // Обработчики пунктов контекстного меню
         contextMenuItems.forEach(item => {
             item.addEventListener('click', (e) => {
@@ -488,26 +511,26 @@
                 hideContextMenu();
             });
         });
-        
+
         // Показ контекстного меню при правом клике
         editor.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            
+
             const selection = window.getSelection();
             const selectedText = selection.toString().trim();
-            
+
             if (selectedText.length > 0) {
                 showContextMenu(e.pageX, e.pageY);
             }
         });
-        
+
         // Показать контекстное меню
         function showContextMenu(x, y) {
             contextMenu.style.display = 'block';
             contextMenu.style.left = x + 'px';
             contextMenu.style.top = y + 'px';
             contextMenuVisible = true;
-            
+
             // Проверяем, чтобы меню не выходило за пределы экрана
             const rect = contextMenu.getBoundingClientRect();
             if (rect.right > window.innerWidth) {
@@ -517,20 +540,20 @@
                 contextMenu.style.top = (y - rect.height) + 'px';
             }
         }
-        
+
         // Скрыть контекстное меню
         function hideContextMenu() {
             contextMenu.style.display = 'none';
             contextMenuVisible = false;
         }
-        
+
         // Закрытие меню при клике вне его
         document.addEventListener('click', (e) => {
             if (contextMenuVisible && !contextMenu.contains(e.target)) {
                 hideContextMenu();
             }
         });
-        
+
         // Горячие клавиши
         editor.addEventListener('keydown', (e) => {
             // Ctrl+B - жирный
@@ -606,45 +629,64 @@
                 e.preventDefault();
                 applyCommand('heading3');
             }
+            if (e.key === 'Enter') {
+                const text = editor.innerText;
+                const lines = text.split(/\r?\n/);
+                const sel = window.getSelection();
+
+                if (!sel.rangeCount)
+                    return;
+
+                const current = sel.anchorNode?.textContent || '';
+
+                if (current.trim().startsWith('- ')) {
+                    e.preventDefault();
+                    document.execCommand(
+                        'insertText',
+                        false,
+                        '\n- '
+                    );
+                }
+            }
         });
-        
+
         // Обновление скрытого поля при изменении контента
         editor.addEventListener('input', () => {
             updateHiddenField();
             updatePreview();
         });
-        
+
         // Слушаем изменения в редакторе
         editor.addEventListener('input', updatePreview);
-        
+
         // Синхронизация прокрутки между редактором и предпросмотром
         function syncScroll(source, target) {
             if (isSyncing) return;
             isSyncing = true;
-            
+
             const scrollPercentage = source.scrollTop / (source.scrollHeight - source.clientHeight);
             target.scrollTop = scrollPercentage * (target.scrollHeight - target.clientHeight);
-            
+
             setTimeout(() => { isSyncing = false; }, 50);
         }
-        
+
         const preview = document.getElementById('markdownPreview');
-        
+
         editor.addEventListener('scroll', function() {
             syncScroll(editor, preview);
         });
-        
+
         preview.addEventListener('scroll', function() {
             syncScroll(preview, editor);
         });
-        
+
         // Обработка отправки формы
         document.getElementById('createForm').addEventListener('submit', function(e) {
             const activeTab = document.querySelector('#createMethodTabs .nav-link.active').id;
-            
+
             if (activeTab === 'editor-tab') {
-                const markdownContent = editor.innerHTML;
-                if (!markdownContent.trim() || markdownContent === '<br>') {
+                const markdownContent = editor.innerText;
+                if (!markdownContent.trim()) {
                     e.preventDefault();
                     alert('Введите контент в редакторе Markdown!');
                     return;
@@ -652,7 +694,7 @@
                 updateHiddenField(); // Обновляем скрытое поле перед отправкой
             }
         });
-        
+
         // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', function() {
             const initialContent = editor.innerHTML;
@@ -662,7 +704,7 @@
             updateHiddenField();
         });
     </script>
-    
+
     <style>
         .markdown-editor {
             font-family: 'Consolas', 'Monaco', monospace;
@@ -671,21 +713,21 @@
             white-space: pre-wrap;
             word-wrap: break-word;
         }
-        
-        .markdown-editor:focus {
-            outline: 2px solid #667eea;
-            border-color: transparent;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
+
+            .markdown-editor:focus {
+                outline: 2px solid #667eea;
+                border-color: transparent;
+                box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            }
+
         .toolbar button:hover {
             background-color: #e9ecef;
         }
-        
+
         .toolbar button:active {
             background-color: #dee2e6;
         }
-        
+
         kbd {
             background-color: #f6f8fa;
             border: 1px solid #d1d5da;
@@ -698,20 +740,20 @@
             padding: 3px 5px;
             vertical-align: middle;
         }
-        
+
         #contextMenu {
             min-width: 250px;
         }
-        
-        #contextMenu .dropdown-item {
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-        }
-        
-        #contextMenu .dropdown-item:hover {
-            background-color: #f8f9fa;
-        }
-        
+
+            #contextMenu .dropdown-item {
+                padding: 0.5rem 1rem;
+                cursor: pointer;
+            }
+
+                #contextMenu .dropdown-item:hover {
+                    background-color: #f8f9fa;
+                }
+
         .markdown-body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, "Helvetica", Arial, sans-serif;
             font-size: 16px;
@@ -719,78 +761,78 @@
             color: #2c3e50;
             padding: 1rem;
         }
-        
-        .markdown-body h1,
-        .markdown-body h2,
-        .markdown-body h3 {
-            font-weight: 700;
-            margin-top: 1em;
-            margin-bottom: 0.5em;
-            color: #2c3e50;
-        }
-        
-        .markdown-body h1 {
-            font-size: 2em;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 0.3em;
-        }
-        
-        .markdown-body h2 {
-            font-size: 1.5em;
-            border-bottom: 1px solid #eaecef;
-            padding-bottom: 0.3em;
-        }
-        
-        .markdown-body code {
-            background-color: #f6f8fa;
-            border-radius: 4px;
-            padding: 0.2em 0.4em;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.9em;
-        }
-        
-        .markdown-body pre {
-            background: #2d3748;
-            border-radius: 6px;
-            padding: 1rem;
-            overflow: auto;
-            color: #f8f8f2;
-        }
-        
-        .markdown-body pre code {
-            background: transparent;
-            padding: 0;
-            color: inherit;
-        }
-        
-        .markdown-body blockquote {
-            border-left: 4px solid #667eea;
-            background: #f8f9fa;
-            padding: 0.5em 1em;
-            margin: 1em 0;
-            color: #5a6c7d;
-        }
-        
-        .markdown-body ul,
-        .markdown-body ol {
-            padding-left: 2em;
-        }
-        
-        .markdown-body table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1em 0;
-        }
-        
-        .markdown-body th,
-        .markdown-body td {
-            padding: 0.5rem 1rem;
-            border: 1px solid #e9ecef;
-        }
-        
-        .markdown-body th {
-            background: #667eea;
-            color: white;
-        }
+
+            .markdown-body h1,
+            .markdown-body h2,
+            .markdown-body h3 {
+                font-weight: 700;
+                margin-top: 1em;
+                margin-bottom: 0.5em;
+                color: #2c3e50;
+            }
+
+            .markdown-body h1 {
+                font-size: 2em;
+                border-bottom: 2px solid #667eea;
+                padding-bottom: 0.3em;
+            }
+
+            .markdown-body h2 {
+                font-size: 1.5em;
+                border-bottom: 1px solid #eaecef;
+                padding-bottom: 0.3em;
+            }
+
+            .markdown-body code {
+                background-color: #f6f8fa;
+                border-radius: 4px;
+                padding: 0.2em 0.4em;
+                font-family: 'Consolas', 'Monaco', monospace;
+                font-size: 0.9em;
+            }
+
+            .markdown-body pre {
+                background: #2d3748;
+                border-radius: 6px;
+                padding: 1rem;
+                overflow: auto;
+                color: #f8f8f2;
+            }
+
+                .markdown-body pre code {
+                    background: transparent;
+                    padding: 0;
+                    color: inherit;
+                }
+
+            .markdown-body blockquote {
+                border-left: 4px solid #667eea;
+                background: #f8f9fa;
+                padding: 0.5em 1em;
+                margin: 1em 0;
+                color: #5a6c7d;
+            }
+
+            .markdown-body ul,
+            .markdown-body ol {
+                padding-left: 2em;
+            }
+
+            .markdown-body table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 1em 0;
+            }
+
+            .markdown-body th,
+            .markdown-body td {
+                padding: 0.5rem 1rem;
+                border: 1px solid #e9ecef;
+            }
+
+            .markdown-body th {
+                background: #667eea;
+                color: white;
+            }
     </style>
 }

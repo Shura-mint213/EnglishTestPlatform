@@ -504,37 +504,50 @@
 
         // Вставка таблицы Markdown с интерактивным управлением
         function insertTable() {
-            const rows = parseInt(prompt('Количество строк (минимум 2):', '3')) || 3;
-            const cols = parseInt(prompt('Количество столбцов (минимум 2):', '2')) || 2;
-            
-            if (rows < 2 || cols < 2) {
-                alert('Минимум 2 строки и 2 столбца required');
-                return;
+            const rows =
+                parseInt(
+                    prompt(
+                        'Количество строк',
+                        '3'
+                    )
+                ) || 3;
+            const cols =
+                parseInt(
+                    prompt(
+                        'Количество столбцов',
+                        '3'
+                    )
+                ) || 3;
+
+            let md = '';
+            md += '\n';
+            md += '|';
+
+            for(let c=1;c<=cols;c++)
+                md += ` Заголовок ${c} |`;
+            md += '\n|';
+
+            for(let c=0;c<cols;c++)
+                md += ' --- |';
+            md += '\n';
+
+            for(let r=1;r<rows;r++){
+                md += '|';
+                for(let c=1;c<=cols;c++)
+                    md += ` Ячейка ${r}.${c} |`;
+                md += '\n';
             }
-            
-            let table = '';
-            
-            // Заголовок таблицы
-            for (let c = 1; c <= cols; c++) {
-                table += `| Столбец ${c} `;
-            }
-            table += '|\n';
-            
-            // Разделитель
-            for (let c = 0; c < cols; c++) {
-                table += '| --- ';
-            }
-            table += '|\n';
-            
-            // Строки данных
-            for (let r = 1; r < rows; r++) {
-                for (let c = 1; c <= cols; c++) {
-                    table += `| Ячейка ${r},${c} `;
-                }
-                table += '|\n';
-            }
-            
-            document.execCommand('insertText', false, '\n' + table + '\n');
+
+            md += '\n';
+
+            document.execCommand(
+                'insertText',
+                false,
+                md
+            );
+
+            updateHiddenField();
+            updatePreview();
         }
 
         // Обработчики кнопок панели инструментов
@@ -564,8 +577,7 @@
             const selectedText = selection.toString().trim();
 
             // Проверяем, находится ли курсор внутри таблицы
-            const node = selection.anchorNode;
-            const tableContext = findTableContext(node);
+            const tableContext = findTableContext();
 
             if (tableContext) {
                 // Показываем контекстное меню для таблиц
@@ -576,18 +588,39 @@
         });
 
         // Поиск таблицы в текущей позиции
-        function findTableContext(node) {
-            while (node) {
-                const text = node.textContent || '';
-                if (text.includes('|') && text.includes('---')) {
-                    const lines = text.split('\n');
-                    for (let i = 0; i < lines.length; i++) {
-                        if (lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
-                            return { node: node, lineIndex: i, lines: lines };
-                        }
+        function findTableContext(){
+            const sel =
+                window.getSelection();
+            if(!sel.rangeCount)
+                return null;
+
+            const text =
+                editor.innerText;
+            const cursor =
+                sel.anchorOffset;
+            const lines =
+                text.split(/\r?\n/);
+            let pos = 0;
+
+            for(let i=0;i<lines.length;i++){
+                const len =
+                    lines[i].length + 1;
+                if(
+                    cursor >= pos &&
+                    cursor <= pos + len
+                ){
+                    if(
+                        lines[i]
+                        .trim()
+                        .startsWith('|')
+                    ){
+                        return {
+                            lines,
+                            lineIndex:i
+                        };
                     }
                 }
-                node = node.parentNode;
+                pos += len;
             }
             return null;
         }
@@ -605,20 +638,20 @@
                     <a class="dropdown-item" href="#" id="deleteColumn">❌ Удалить столбец</a>
                 </div>
             `;
-            
+
             // Удаляем старое меню таблиц если есть
             const existingMenu = document.getElementById('tableContextMenu');
             if (existingMenu) existingMenu.remove();
-            
+
             // Создаём новое меню
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = menuHtml;
             document.body.appendChild(tempDiv.firstElementChild);
-            
+
             const menu = document.getElementById('tableContextMenu');
             menu.style.left = x + 'px';
             menu.style.top = y + 'px';
-            
+
             // Проверяем, чтобы меню не выходило за пределы экрана
             const rect = menu.getBoundingClientRect();
             if (rect.right > window.innerWidth) {
@@ -627,44 +660,44 @@
             if (rect.bottom > window.innerHeight) {
                 menu.style.top = (y - rect.height) + 'px';
             }
-            
+
             // Обработчики для меню таблиц
             document.getElementById('addRowAbove').addEventListener('click', (e) => {
                 e.preventDefault();
                 addTableRow(tableContext, 'above');
                 menu.remove();
             });
-            
+
             document.getElementById('addRowBelow').addEventListener('click', (e) => {
                 e.preventDefault();
                 addTableRow(tableContext, 'below');
                 menu.remove();
             });
-            
+
             document.getElementById('addColumnLeft').addEventListener('click', (e) => {
                 e.preventDefault();
                 addTableColumn(tableContext, 'left');
                 menu.remove();
             });
-            
+
             document.getElementById('addColumnRight').addEventListener('click', (e) => {
                 e.preventDefault();
                 addTableColumn(tableContext, 'right');
                 menu.remove();
             });
-            
+
             document.getElementById('deleteRow').addEventListener('click', (e) => {
                 e.preventDefault();
                 deleteTableRow(tableContext);
                 menu.remove();
             });
-            
+
             document.getElementById('deleteColumn').addEventListener('click', (e) => {
                 e.preventDefault();
                 deleteTableColumn(tableContext);
                 menu.remove();
             });
-            
+
             // Закрытие при клике вне меню
             setTimeout(() => {
                 document.addEventListener('click', function closeMenu(event) {
@@ -680,14 +713,14 @@
         function addTableRow(tableContext, position) {
             const lines = tableContext.lines;
             const separatorIndex = lines.findIndex(l => l.includes('|') && l.includes('---'));
-            
+
             let newRow = '|';
             const colCount = (lines[separatorIndex].match(/\|/g) || []).length - 1;
             for (let c = 0; c < colCount; c++) {
                 newRow += ' Новая ячейка |';
             }
-            newRow += '\\n';
-            
+            newRow += '\n';
+
             let insertIndex;
             if (position === 'above' && tableContext.lineIndex < separatorIndex) {
                 insertIndex = separatorIndex;
@@ -696,56 +729,80 @@
             } else {
                 insertIndex = tableContext.lineIndex + 1;
             }
-            
+
             lines.splice(insertIndex, 0, newRow.trim());
-            tableContext.node.textContent = lines.join('\\n');
+            editor.innerText = lines.join('\n');
             updateHiddenField();
             updatePreview();
         }
 
         // Добавление столбца в таблицу
-        function addTableColumn(tableContext, position) {
-            const lines = tableContext.lines;
-            const newLines = [];
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
-                    const cells = line.split('|').filter(c => c !== '');
-                    if (position === 'left') {
-                        cells.unshift(i === 1 ? ' --- ' : ' Новый столбец ');
-                    } else {
-                        cells.push(i === 1 ? ' --- ' : ' Новый столбец ');
-                    }
-                    newLines.push('|' + cells.join('|') + '|');
-                } else {
-                    newLines.push(line);
-                }
+        function addTableColumn(
+            tableContext,
+            position
+        ){
+            const lines =
+                [...tableContext.lines];
+            for(
+                let i=0;
+                i<lines.length;
+                i++
+            ){
+                const line =
+                    lines[i];
+                if(
+                    !line.trim()
+                    .startsWith('|')
+                )
+                    continue;
+                const cells =
+                    line
+                    .split('|')
+                    .slice(1,-1);
+                const value =
+                    i===1
+                    ? ' --- '
+                    : ' Новый ';
+
+                if(
+                    position==='left'
+                )
+                    cells.unshift(value);
+                else
+                    cells.push(value);
+
+                lines[i]=
+                    '|'
+                    +cells.join('|')
+                    +'|';
             }
-            
-            tableContext.node.textContent = newLines.join('\\n');
+
+            editor.innerText=
+                lines.join('\n');
+
             updateHiddenField();
             updatePreview();
+
         }
 
         // Удаление строки из таблицы
         function deleteTableRow(tableContext) {
             const lines = tableContext.lines;
             const separatorIndex = lines.findIndex(l => l.includes('|') && l.includes('---'));
-            
+
             // Не удаляем заголовок или разделитель
             if (tableContext.lineIndex <= separatorIndex) {
                 alert('Нельзя удалить строку заголовка!');
                 return;
             }
-            
+
             // Оставляем минимум одну строку данных
             const dataRows = lines.filter((l, i) => i > separatorIndex && l.trim().startsWith('|'));
             if (dataRows.length <= 1) {
                 alert('В таблице должна быть хотя бы одна строка данных!');
                 return;
             }
-            
+
             lines.splice(tableContext.lineIndex, 1);
             tableContext.node.textContent = lines.join('\\n');
             updateHiddenField();
@@ -753,32 +810,45 @@
         }
 
         // Удаление столбца из таблицы
-        function deleteTableColumn(tableContext) {
-            const lines = tableContext.lines;
-            const newLines = [];
-            
-            // Определяем количество столбцов
-            const separatorLine = lines.find(l => l.includes('|') && l.includes('---'));
-            const colCount = (separatorLine.match(/\|/g) || []).length - 1;
-            
-            if (colCount <= 2) {
-                alert('В таблице должно быть хотя бы 2 столбца!');
-                return;
-            }
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
-                    const cells = line.split('|').filter(c => c !== '');
-                    const colIndex = Math.floor(Math.random() * colCount); // Удаляем случайный столбец или можно сделать выбор
-                    cells.splice(colCount - 1, 1); // Удаляем последний столбец для простоты
-                    newLines.push('|' + cells.join('|') + '|');
-                } else {
-                    newLines.push(line);
+        function deleteTableColumn(
+            tableContext
+        ){
+            const lines =
+                [...tableContext.lines];
+            for(
+                let i=0;
+                i<lines.length;
+                i++
+            ){
+                if(
+                    !lines[i]
+                    .trim()
+                    .startsWith('|')
+                )
+                    continue;
+
+                let cells =
+                    lines[i]
+                    .split('|')
+                    .slice(1,-1);
+
+                if(
+                    cells.length<=2
+                ){
+                    alert(
+                    'Минимум 2 столбца'
+                    );
+                    return;
                 }
+                cells.pop();
+                lines[i]=
+                    '|'
+                    +cells.join('|')
+                    +'|';
             }
-            
-            tableContext.node.textContent = newLines.join('\\n');
+            editor.innerText=
+                lines.join('\n');
+
             updateHiddenField();
             updatePreview();
         }

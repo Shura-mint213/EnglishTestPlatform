@@ -1,1 +1,71 @@
-Nothing should be ignored since the changes only include source files (.cshtml) without any build artifacts, dependencies, or temporary files.
+# Build results
+bin/
+obj/
+out/
+
+# User-specific files
+.vs/
+*.user
+*.userosscache
+*.suo
+
+# Log files
+*.log
+
+# Dependency directories
+node_modules/
+packages/
+
+# Environment specific settings
+.env
+.env.local
+.env.*
+!src/.env.example
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+*.cover
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Compiled files
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snupkg
+
+
+bin/
+obj/
+source/
+
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
+
+# SQLite Database Files
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+
+**/Data/*.db
+**/Data/*.db-shm
+**/Data/*.db-wal
+
+**/*.db
+Data/*.db

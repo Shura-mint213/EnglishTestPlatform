@@ -92,8 +92,8 @@
         navContainer.appendChild(contentWrapper);
         contentWrapper.appendChild(markdownBody);
 
-        // Добавляем кнопку переключения после sidebar
-        navContainer.appendChild(toggleBtn);
+        // Добавляем кнопку в body, чтобы она всегда была поверх страницы
+        document.body.appendChild(toggleBtn);
 
         // Обработчик клика по кнопке переключения
         toggleBtn.addEventListener('click', function() {

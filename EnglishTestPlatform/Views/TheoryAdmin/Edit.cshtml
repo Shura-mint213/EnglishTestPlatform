@@ -52,8 +52,94 @@
                                 <h5>✏️ Ввод Markdown</h5>
                             </div>
                             <div class="card-body">
-                                <textarea class="form-control" id="markdownEditor" name="MarkdownContent" rows="20" placeholder="# Заголовок&#10;&#10;Ваш текст в формате Markdown...">@Model.MarkdownContent</textarea>
+                                <!-- Панель инструментов -->
+                                <div class="toolbar mb-2 p-2 border rounded bg-light">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="bold" title="Полужирный (Ctrl+B)">
+                                        <strong>B</strong>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="italic" title="Курсив (Ctrl+I)">
+                                        <em>I</em>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="underline" title="Подчеркнутый (Ctrl+U)">
+                                        <u>U</u>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="strikeThrough" title="Зачеркнутый (Ctrl+S)">
+                                        <s>S</s>
+                                    </button>
+                                    <span class="border-start mx-1"></span>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="heading1" title="Заголовок 1 (Ctrl+Alt+1)">
+                                        H1
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="heading2" title="Заголовок 2 (Ctrl+Alt+2)">
+                                        H2
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="heading3" title="Заголовок 3 (Ctrl+Alt+3)">
+                                        H3
+                                    </button>
+                                    <span class="border-start mx-1"></span>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="unorderedList" title="Маркированный список (Ctrl+Shift+8)">
+                                        • Список
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="orderedList" title="Нумерованный список (Ctrl+Shift+7)">
+                                        1. Список
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="blockquote" title="Цитата (Ctrl+Shift+Q)">
+                                        ❝ Цитата
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="codeBlock" title="Блок кода (Ctrl+Shift+C)">
+                                        &lt;/&gt; Код
+                                    </button>
+                                    <span class="border-start mx-1"></span>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="link" title="Вставить ссылку (Ctrl+K)">
+                                        🔗 Ссылка
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="image" title="Вставить изображение (Ctrl+Shift+I)">
+                                        🖼️ Картинка
+                                    </button>
+                                    <span class="border-start mx-1"></span>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="undo" title="Отменить (Ctrl+Z)">
+                                        ↩️
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-command="redo" title="Повторить (Ctrl+Y)">
+                                        ↪️
+                                    </button>
+                                </div>
+                                <!-- Контекстное меню -->
+                                <div id="contextMenu" class="dropdown-menu position-absolute shadow-lg" style="display: none; z-index: 1000;">
+                                    <a class="dropdown-item" href="#" data-command="bold"><strong>Полужирный</strong> <small class="text-muted">(Ctrl+B)</small></a>
+                                    <a class="dropdown-item" href="#" data-command="italic"><em>Курсив</em> <small class="text-muted">(Ctrl+I)</small></a>
+                                    <a class="dropdown-item" href="#" data-command="underline"><u>Подчеркнутый</u> <small class="text-muted">(Ctrl+U)</small></a>
+                                    <a class="dropdown-item" href="#" data-command="strikeThrough"><s>Зачеркнутый</s> <small class="text-muted">(Ctrl+S)</small></a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="#" data-command="heading1">Заголовок 1 <small class="text-muted">(Ctrl+Alt+1)</small></a>
+                                    <a class="dropdown-item" href="#" data-command="heading2">Заголовок 2 <small class="text-muted">(Ctrl+Alt+2)</small></a>
+                                    <a class="dropdown-item" href="#" data-command="heading3">Заголовок 3 <small class="text-muted">(Ctrl+Alt+3)</small></a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="#" data-command="unorderedList">• Маркированный список <small class="text-muted">(Ctrl+Shift+8)</small></a>
+                                    <a class="dropdown-item" href="#" data-command="orderedList">1. Нумерованный список <small class="text-muted">(Ctrl+Shift+7)</small></a>
+                                    <a class="dropdown-item" href="#" data-command="blockquote">❝ Цитата <small class="text-muted">(Ctrl+Shift+Q)</small></a>
+                                    <a class="dropdown-item" href="#" data-command="codeBlock">&lt;/&gt; Блок кода <small class="text-muted">(Ctrl+Shift+C)</small></a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="#" data-command="link">🔗 Вставить ссылку <small class="text-muted">(Ctrl+K)</small></a>
+                                    <a class="dropdown-item" href="#" data-command="image">🖼️ Вставить изображение <small class="text-muted">(Ctrl+Shift+I)</small></a>
+                                </div>
+                                <!-- Редактируемая область с contenteditable -->
+                                <div id="markdownEditor" class="form-control markdown-editor" contenteditable="true" 
+                                     style="min-height: 400px; max-height: 600px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.6;"
+                                     placeholder="# Заголовок&#10;&#10;Ваш текст в формате Markdown...">@Model.MarkdownContent</div>
+                                <!-- Скрытое поле для отправки данных -->
+                                <input type="hidden" name="MarkdownContent" id="hiddenMarkdownContent" value="@Model.MarkdownContent" />
                                 <span asp-validation-for="MarkdownContent" class="text-danger"></span>
+                                <!-- Подсказки по горячим клавишам -->
+                                <div class="mt-2 p-2 bg-light border rounded small">
+                                    <strong class="text-primary">⌨️ Горячие клавиши:</strong>
+                                    <span class="ms-2"><kbd>Ctrl+B</kbd> Жирный</span>
+                                    <span class="ms-2"><kbd>Ctrl+I</kbd> Курсив</span>
+                                    <span class="ms-2"><kbd>Ctrl+U</kbd> Подчеркнутый</span>
+                                    <span class="ms-2"><kbd>Ctrl+K</kbd> Ссылка</span>
+                                    <span class="ms-2"><kbd>Ctrl+Shift+C</kbd> Код</span>
+                                    <span class="ms-2"><kbd>Ctrl+Z</kbd> Отменить</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -170,16 +256,31 @@
     
     <script>
         let previewTimeout;
-        let isSyncing = false; // Флаг для предотвращения циклической синхронизации
+        let isSyncing = false;
+        let contextMenuVisible = false;
+        
+        // Получаем элементы
+        const editor = document.getElementById('markdownEditor');
+        const hiddenField = document.getElementById('hiddenMarkdownContent');
+        const contextMenu = document.getElementById('contextMenu');
+        const toolbarButtons = document.querySelectorAll('.toolbar button[data-command]');
+        const contextMenuItems = document.querySelectorAll('#contextMenu a[data-command]');
+        
+        // Функция обновления скрытого поля перед отправкой формы
+        function updateHiddenField() {
+            if (editor) {
+                hiddenField.value = editor.innerHTML;
+            }
+        }
         
         // Функция предпросмотра
         function updatePreview() {
             clearTimeout(previewTimeout);
             previewTimeout = setTimeout(async () => {
-                const markdownContent = document.getElementById('markdownEditor').value;
+                const markdownContent = editor.innerHTML;
                 const previewDiv = document.getElementById('markdownPreview');
                 
-                if (!markdownContent.trim()) {
+                if (!markdownContent.trim() || markdownContent === '<br>') {
                     previewDiv.innerHTML = '<p class="text-muted">Здесь будет предпросмотр вашего Markdown...</p>';
                     return;
                 }
@@ -199,28 +300,354 @@
                 } catch (error) {
                     previewDiv.innerHTML = `<div class="alert alert-danger">Ошибка загрузки предпросмотра: ${error.message}</div>`;
                 }
-            }, 500); // Задержка 500мс после последнего ввода
+            }, 500);
         }
         
+        // Применение форматирования к выделенному тексту
+        function applyCommand(command, value = null) {
+            editor.focus();
+            
+            switch(command) {
+                case 'bold':
+                    document.execCommand('bold', false, value);
+                    wrapWithMarkdown('**');
+                    break;
+                case 'italic':
+                    document.execCommand('italic', false, value);
+                    wrapWithMarkdown('*');
+                    break;
+                case 'underline':
+                    document.execCommand('underline', false, value);
+                    wrapWithMarkdown('__');
+                    break;
+                case 'strikeThrough':
+                    document.execCommand('strikeThrough', false, value);
+                    wrapWithMarkdown('~~');
+                    break;
+                case 'heading1':
+                    formatHeading('# ');
+                    break;
+                case 'heading2':
+                    formatHeading('## ');
+                    break;
+                case 'heading3':
+                    formatHeading('### ');
+                    break;
+                case 'unorderedList':
+                    formatList('- ');
+                    break;
+                case 'orderedList':
+                    formatList('1. ');
+                    break;
+                case 'blockquote':
+                    formatBlockquote('> ');
+                    break;
+                case 'codeBlock':
+                    wrapWithMarkdown('`', '`');
+                    break;
+                case 'link':
+                    insertLink();
+                    break;
+                case 'image':
+                    insertImage();
+                    break;
+                case 'undo':
+                    document.execCommand('undo', false, value);
+                    break;
+                case 'redo':
+                    document.execCommand('redo', false, value);
+                    break;
+                default:
+                    document.execCommand(command, false, value);
+            }
+            
+            updateHiddenField();
+            updatePreview();
+        }
+        
+        // Обертка текста маркерами Markdown
+        function wrapWithMarkdown(prefix, suffix = null) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            
+            const range = selection.getRangeAt(0);
+            const selectedText = range.toString();
+            
+            if (selectedText.length > 0) {
+                suffix = suffix || prefix;
+                const wrappedText = prefix + selectedText + suffix;
+                document.execCommand('insertText', false, wrappedText);
+            } else {
+                suffix = suffix || prefix;
+                const template = prefix + 'текст' + suffix;
+                document.execCommand('insertText', false, template);
+                
+                setTimeout(() => {
+                    const newSelection = window.getSelection();
+                    if (newSelection.rangeCount) {
+                        const newRange = newSelection.getRangeAt(0);
+                        const currentText = newRange.toString();
+                        if (currentText.includes('текст')) {
+                        }
+                    }
+                }, 10);
+            }
+        }
+        
+        // Форматирование заголовков
+        function formatHeading(prefix) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            
+            const range = selection.getRangeAt(0);
+            let node = range.startContainer;
+            
+            while (node && node.nodeType !== 1) {
+                node = node.parentNode;
+            }
+            
+            if (node) {
+                const text = node.textContent || node.innerText;
+                const lines = text.split('\n');
+                const currentLineIndex = getCurrentLineIndex(range);
+                
+                if (currentLineIndex >= 0 && currentLineIndex < lines.length) {
+                    const currentLine = lines[currentLineIndex];
+                    if (!currentLine.startsWith(prefix)) {
+                        lines[currentLineIndex] = prefix + currentLine;
+                        node.textContent = lines.join('\n');
+                    }
+                }
+            }
+        }
+        
+        // Получение индекса текущей строки
+        function getCurrentLineIndex(range) {
+            const editorRect = editor.getBoundingClientRect();
+            const rangeRect = range.getClientRects()[0];
+            
+            if (rangeRect) {
+                const lineHeight = 22;
+                const relativeY = rangeRect.top - editorRect.top + editor.scrollTop;
+                return Math.floor(relativeY / lineHeight);
+            }
+            return 0;
+        }
+        
+        // Форматирование списков
+        function formatList(prefix) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            
+            const range = selection.getRangeAt(0);
+            let node = range.startContainer;
+            
+            while (node && node.nodeType !== 1) {
+                node = node.parentNode;
+            }
+            
+            if (node) {
+                const text = node.textContent || node.innerText;
+                const lines = text.split('\n');
+                const currentLineIndex = getCurrentLineIndex(range);
+                
+                if (currentLineIndex >= 0 && currentLineIndex < lines.length) {
+                    const currentLine = lines[currentLineIndex].trim();
+                    if (!currentLine.startsWith(prefix) && !currentLine.startsWith('- ') && !/^\d+\.\s/.test(currentLine)) {
+                        lines[currentLineIndex] = prefix + currentLine;
+                        node.textContent = lines.join('\n');
+                    }
+                }
+            }
+        }
+        
+        // Форматирование цитат
+        function formatBlockquote(prefix) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            
+            const range = selection.getRangeAt(0);
+            let node = range.startContainer;
+            
+            while (node && node.nodeType !== 1) {
+                node = node.parentNode;
+            }
+            
+            if (node) {
+                const text = node.textContent || node.innerText;
+                const lines = text.split('\n');
+                const currentLineIndex = getCurrentLineIndex(range);
+                
+                if (currentLineIndex >= 0 && currentLineIndex < lines.length) {
+                    const currentLine = lines[currentLineIndex].trim();
+                    if (!currentLine.startsWith(prefix)) {
+                        lines[currentLineIndex] = prefix + currentLine;
+                        node.textContent = lines.join('\n');
+                    }
+                }
+            }
+        }
+        
+        // Вставка ссылки
+        function insertLink() {
+            const url = prompt('Введите URL ссылки:', 'https://');
+            if (url) {
+                const selection = window.getSelection();
+                const selectedText = selection.toString() || 'ссылка';
+                const markdownLink = `[${selectedText}](${url})`;
+                document.execCommand('insertText', false, markdownLink);
+            }
+        }
+        
+        // Вставка изображения
+        function insertImage() {
+            const url = prompt('Введите URL изображения:', 'https://');
+            if (url) {
+                const markdownImage = `![Описание изображения](${url})`;
+                document.execCommand('insertText', false, markdownImage);
+            }
+        }
+        
+        // Обработчики кнопок панели инструментов
+        toolbarButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const command = button.getAttribute('data-command');
+                applyCommand(command);
+            });
+        });
+        
+        // Обработчики пунктов контекстного меню
+        contextMenuItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const command = item.getAttribute('data-command');
+                applyCommand(command);
+                hideContextMenu();
+            });
+        });
+        
+        // Показ контекстного меню при правом клике
+        editor.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            
+            const selection = window.getSelection();
+            const selectedText = selection.toString().trim();
+            
+            if (selectedText.length > 0) {
+                showContextMenu(e.pageX, e.pageY);
+            }
+        });
+        
+        // Показать контекстное меню
+        function showContextMenu(x, y) {
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = x + 'px';
+            contextMenu.style.top = y + 'px';
+            contextMenuVisible = true;
+            
+            const rect = contextMenu.getBoundingClientRect();
+            if (rect.right > window.innerWidth) {
+                contextMenu.style.left = (x - rect.width) + 'px';
+            }
+            if (rect.bottom > window.innerHeight) {
+                contextMenu.style.top = (y - rect.height) + 'px';
+            }
+        }
+        
+        // Скрыть контекстное меню
+        function hideContextMenu() {
+            contextMenu.style.display = 'none';
+            contextMenuVisible = false;
+        }
+        
+        // Закрытие меню при клике вне его
+        document.addEventListener('click', (e) => {
+            if (contextMenuVisible && !contextMenu.contains(e.target)) {
+                hideContextMenu();
+            }
+        });
+        
+        // Горячие клавиши
+        editor.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                applyCommand('bold');
+            }
+            if (e.ctrlKey && e.key === 'i') {
+                e.preventDefault();
+                applyCommand('italic');
+            }
+            if (e.ctrlKey && e.key === 'u') {
+                e.preventDefault();
+                applyCommand('underline');
+            }
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                applyCommand('strikeThrough');
+            }
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                applyCommand('link');
+            }
+            if (e.ctrlKey && e.key === 'z') {
+            }
+            if (e.ctrlKey && e.key === 'y') {
+            }
+            if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+                e.preventDefault();
+                applyCommand('codeBlock');
+            }
+            if (e.ctrlKey && e.shiftKey && e.key === '8') {
+                e.preventDefault();
+                applyCommand('unorderedList');
+            }
+            if (e.ctrlKey && e.shiftKey && e.key === '7') {
+                e.preventDefault();
+                applyCommand('orderedList');
+            }
+            if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
+                e.preventDefault();
+                applyCommand('blockquote');
+            }
+            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+                e.preventDefault();
+                applyCommand('image');
+            }
+            if (e.ctrlKey && e.altKey && e.key === '1') {
+                e.preventDefault();
+                applyCommand('heading1');
+            }
+            if (e.ctrlKey && e.altKey && e.key === '2') {
+                e.preventDefault();
+                applyCommand('heading2');
+            }
+            if (e.ctrlKey && e.altKey && e.key === '3') {
+                e.preventDefault();
+                applyCommand('heading3');
+            }
+        });
+        
+        // Обновление скрытого поля при изменении контента
+        editor.addEventListener('input', () => {
+            updateHiddenField();
+            updatePreview();
+        });
+        
         // Слушаем изменения в редакторе
-        document.getElementById('markdownEditor').addEventListener('input', updatePreview);
+        editor.addEventListener('input', updatePreview);
         
         // Синхронизация прокрутки между редактором и предпросмотром
         function syncScroll(source, target) {
             if (isSyncing) return;
             isSyncing = true;
             
-            // Вычисляем процент прокрутки источника
             const scrollPercentage = source.scrollTop / (source.scrollHeight - source.clientHeight);
-            
-            // Применяем тот же процент к целевому элементу
             target.scrollTop = scrollPercentage * (target.scrollHeight - target.clientHeight);
             
             setTimeout(() => { isSyncing = false; }, 50);
         }
         
-        // Добавляем обработчики прокрутки
-        const editor = document.getElementById('markdownEditor');
         const preview = document.getElementById('markdownPreview');
         
         editor.addEventListener('scroll', function() {
@@ -236,25 +663,75 @@
             const activeTab = document.querySelector('#editMethodTabs .nav-link.active').id;
             
             if (activeTab === 'editor-tab') {
-                const markdownContent = document.getElementById('markdownEditor').value;
-                if (!markdownContent.trim()) {
+                const markdownContent = editor.innerHTML;
+                if (!markdownContent.trim() || markdownContent === '<br>') {
                     e.preventDefault();
                     alert('Введите контент в редакторе Markdown!');
                     return;
                 }
+                updateHiddenField();
             }
         });
         
-        // Инициализация предпросмотра при загрузке страницы
+        // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', function() {
-            const initialContent = document.getElementById('markdownEditor').value;
-            if (initialContent && initialContent.trim()) {
+            const initialContent = editor.innerHTML;
+            if (initialContent && initialContent.trim() && initialContent !== '<br>') {
                 updatePreview();
             }
+            updateHiddenField();
         });
     </script>
     
     <style>
+        .markdown-editor {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .markdown-editor:focus {
+            outline: 2px solid #667eea;
+            border-color: transparent;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .toolbar button:hover {
+            background-color: #e9ecef;
+        }
+        
+        .toolbar button:active {
+            background-color: #dee2e6;
+        }
+        
+        kbd {
+            background-color: #f6f8fa;
+            border: 1px solid #d1d5da;
+            border-radius: 3px;
+            box-shadow: inset 0 -1px 0 #d1d5da;
+            color: #444d56;
+            display: inline-block;
+            font-size: 11px;
+            line-height: 10px;
+            padding: 3px 5px;
+            vertical-align: middle;
+        }
+        
+        #contextMenu {
+            min-width: 250px;
+        }
+        
+        #contextMenu .dropdown-item {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+        }
+        
+        #contextMenu .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+        
         .markdown-body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, "Helvetica", Arial, sans-serif;
             font-size: 16px;

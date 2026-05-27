@@ -233,7 +233,11 @@
 
         // Функция обновления скрытого поля перед отправкой формы
         function updateHiddenField() {
-            if (editor) {
+            if (window.tableEditorIntegration) {
+                // Используем новый метод интеграции для корректной конвертации таблиц
+                window.tableEditorIntegration.updateHiddenField();
+            } else if (editor) {
+                // Старый метод для обратной совместимости
                 hiddenField.value = editor.innerText
                     .replace(/\u00A0/g, ' ')
                     .trimEnd();
@@ -244,8 +248,15 @@
         function updatePreview() {
             clearTimeout(previewTimeout);
             previewTimeout = setTimeout(async () => {
-                const markdownContent = editor.innerText
-                    .replace(/\u00A0/g, ' ');
+                // Получаем контент через интеграцию таблиц для корректной конвертации
+                let markdownContent;
+                if (window.tableEditorIntegration) {
+                    markdownContent = window.tableEditorIntegration.getContent();
+                } else {
+                    markdownContent = editor.innerText
+                        .replace(/\u00A0/g, ' ');
+                }
+                
                 const previewDiv = document.getElementById('markdownPreview');
 
                 if (!markdownContent.trim()) {
@@ -265,6 +276,13 @@
 
                     const html = await response.text();
                     previewDiv.innerHTML = html || '<p class="text-muted">Пустой контент</p>';
+                    
+                    // После обновления предпросмотра инициализируем визуальный редактор таблиц
+                    setTimeout(() => {
+                        if (window.visualTableEditor) {
+                            window.visualTableEditor.scanTables();
+                        }
+                    }, 100);
                 } catch (error) {
                     previewDiv.innerHTML = `<div class="alert alert-danger">Ошибка загрузки предпросмотра: ${error.message}</div>`;
                 }
@@ -519,42 +537,37 @@
                     )
                 ) || 3;
 
-            let md = '';
-            md += '\n';
-            md += '|';
-
-            // Пустые заголовки
-            for(let c=1;c<=cols;c++)
-                md += ` |`;
-            md += '\n|';
-
-            // Разделитель
-            for(let c=0;c<cols;c++)
-                md += ' --- |';
-            md += '\n';
-
-            // Пустые ячейки
-            for(let r=1;r<rows;r++){
-                md += '|';
-                for(let c=1;c<=cols;c++)
-                    md += ` |`;
-                md += '\n';
+            // Создаём HTML таблицу напрямую в редакторе
+            let html = '<table class="table table-bordered visual-table" style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
+            
+            // Заголовок
+            html += '<tr>';
+            for(let c = 0; c < cols; c++) {
+                html += '<th contenteditable="true" style="border: 1px solid #dee2e6; padding: 8px; outline: none; min-width: 50px;"></th>';
             }
+            html += '</tr>';
+            
+            // Строки данных
+            for(let r = 1; r < rows; r++) {
+                html += '<tr>';
+                for(let c = 0; c < cols; c++) {
+                    html += '<td contenteditable="true" style="border: 1px solid #dee2e6; padding: 8px; outline: none; min-width: 50px;"></td>';
+                }
+                html += '</tr>';
+            }
+            
+            html += '</table>\n';
 
-            md += '\n';
-
-            document.execCommand(
-                'insertText',
-                false,
-                md
-            );
+            document.execCommand('insertHTML', false, html);
 
             updateHiddenField();
             updatePreview();
             
-            // Инициализируем визуальный редактор после вставки таблицы
+            // Переинициализируем визуальный редактор после вставки таблицы
             setTimeout(() => {
-                initVisualTableEditor();
+                if (window.tableEditorIntegration) {
+                    window.tableEditorIntegration.visualEditor.scanTables();
+                }
             }, 300);
         }
 
@@ -990,11 +1003,11 @@
         // Обновление скрытого поля при изменении контента
         editor.addEventListener('input', () => {
             updateHiddenField();
-            updatePreview();
+            // updatePreview вызывается внутри handleEditorChange интеграции таблиц
         });
 
-        // Слушаем изменения в редакторе
-        editor.addEventListener('input', updatePreview);
+        // Слушаем изменения в редакторе (дублирующий listener можно удалить)
+        // editor.addEventListener('input', updatePreview);
 
         // Синхронизация прокрутки между редактором и предпросмотром
         function syncScroll(source, target) {
@@ -1022,7 +1035,14 @@
             const activeTab = document.querySelector('#createMethodTabs .nav-link.active').id;
 
             if (activeTab === 'editor-tab') {
-                const markdownContent = editor.innerText;
+                // Получаем контент через интеграцию таблиц для корректной конвертации
+                let markdownContent;
+                if (window.tableEditorIntegration) {
+                    markdownContent = window.tableEditorIntegration.getContent();
+                } else {
+                    markdownContent = editor.innerText;
+                }
+                
                 if (!markdownContent.trim()) {
                     e.preventDefault();
                     alert('Введите контент в редакторе Markdown!');
@@ -1040,31 +1060,214 @@
             }
             updateHiddenField();
             
-            // Инициализация визуального редактора таблиц после загрузки предпросмотра
+            // Инициализация интеграции визуального редактора таблиц
             setTimeout(() => {
-                initVisualTableEditor();
+                initTableEditorIntegration();
             }, 500);
         });
         
-        // Функция инициализации визуального редактора таблиц
+        // Функция инициализации визуального редактора таблиц (оставлена для совместимости)
         function initVisualTableEditor() {
-            if (typeof VisualTableEditor !== 'undefined') {
-                const previewDiv = document.getElementById('markdownPreview');
-                if (previewDiv) {
-                    window.visualTableEditor = new VisualTableEditor('markdownPreview', onTableChange);
-                }
-            }
+            // Теперь используется initTableEditorIntegration()
+            console.log('initVisualTableEditor вызвана - используйте initTableEditorIntegration()');
         }
         
-        // Callback при изменении таблицы
+        // Callback при изменении таблицы (оставлен для совместимости)
         function onTableChange(table) {
             updateHiddenField();
             updatePreview();
         }
     </script>
     
-    <!-- Подключение визуального редактора таблиц -->
     <script src="~/js/visual-table-editor.js"></script>
+    <script>
+        // Интеграция визуального редактора таблиц с основным редактором
+        class TableEditorIntegration {
+            constructor(editorId, previewId, hiddenFieldId, onChangeCallback) {
+                this.editor = document.getElementById(editorId);
+                this.preview = document.getElementById(previewId);
+                this.hiddenField = document.getElementById(hiddenFieldId);
+                this.onChange = onChangeCallback;
+                this.visualEditor = null;
+                this.isProcessing = false;
+                
+                this.init();
+            }
+            
+            init() {
+                // Конвертируем Markdown таблицы в HTML при загрузке
+                this.convertMarkdownTablesToHTML();
+                
+                // Инициализируем визуальный редактор
+                this.visualEditor = new VisualTableEditor(this.editor.id, () => {
+                    this.onTableModified();
+                });
+                
+                // Отслеживаем изменения в редакторе
+                this.editor.addEventListener('input', () => {
+                    if (!this.isProcessing) {
+                        this.handleEditorChange();
+                    }
+                });
+            }
+            
+            // Конвертация Markdown таблиц в HTML для визуального редактирования
+            convertMarkdownTablesToHTML() {
+                const content = this.editor.innerHTML;
+                const markdownTableRegex = /(\|[\s\S]+?\|)(?=\s*\n\s*\|[-\s|]+)/g;
+                
+                let match;
+                while ((match = markdownTableRegex.exec(content)) !== null) {
+                    const markdownTable = match[0];
+                    const htmlTable = this.markdownTableToHTML(markdownTable);
+                    if (htmlTable) {
+                        this.editor.innerHTML = this.editor.innerHTML.replace(markdownTable, htmlTable);
+                    }
+                }
+            }
+            
+            // Конвертация одной Markdown таблицы в HTML
+            markdownTableToHTML(markdown) {
+                const lines = markdown.trim().split('\n').filter(line => line.trim());
+                if (lines.length < 2) return null;
+                
+                let html = '<table class="table table-bordered visual-table" style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
+                
+                lines.forEach((line, index) => {
+                    // Пропускаем строки разделители
+                    if (line.includes('---')) return;
+                    
+                    const cells = line.split('|').filter((c, i, arr) => i > 0 && i < arr.length - 1);
+                    if (cells.length === 0) return;
+                    
+                    html += '<tr>';
+                    cells.forEach(cellContent => {
+                        const cellTag = index === 0 ? 'th' : 'td';
+                        const content = cellContent.trim();
+                        html += `<${cellTag} contenteditable="true" style="border: 1px solid #dee2e6; padding: 8px; outline: none; min-width: 50px;">${content}</${cellTag}>`;
+                    });
+                    html += '</tr>';
+                });
+                
+                html += '</table>\n';
+                return html;
+            }
+            
+            // Конвертация HTML таблицы обратно в Markdown
+            htmlTableToMarkdown(table) {
+                const rows = Array.from(table.querySelectorAll('tr'));
+                if (rows.length === 0) return '';
+                
+                let markdown = '\n';
+                
+                rows.forEach((row, rowIndex) => {
+                    const cells = Array.from(row.querySelectorAll('th, td'));
+                    let line = '|';
+                    
+                    cells.forEach(cell => {
+                        const text = cell.innerText.trim();
+                        line += ` ${text} |`;
+                    });
+                    
+                    markdown += line + '\n';
+                    
+                    // Добавляем разделитель после заголовка
+                    if (rowIndex === 0) {
+                        markdown += '|' + cells.map(() => ' --- |').join('') + '\n';
+                    }
+                });
+                
+                return markdown + '\n';
+            }
+            
+            // Обработка изменений в редакторе
+            handleEditorChange() {
+                // Сохраняем позицию курсора
+                const selection = window.getSelection();
+                let range = null;
+                if (selection.rangeCount > 0) {
+                    range = selection.getRangeAt(0);
+                }
+                
+                // Конвертируем новые Markdown таблицы в HTML
+                this.convertMarkdownTablesToHTML();
+                
+                // Восстанавливаем позицию курсора
+                if (range && this.editor.contains(range.startContainer)) {
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+                
+                this.updateHiddenField();
+            }
+            
+            // Обновление скрытого поля перед отправкой
+            updateHiddenField() {
+                if (!this.editor) return;
+                
+                // Клонируем контент для обработки
+                const tempDiv = this.editor.cloneNode(true);
+                const tables = tempDiv.querySelectorAll('table.visual-table');
+                
+                // Конвертируем все HTML таблицы обратно в Markdown
+                tables.forEach(table => {
+                    const markdown = this.htmlTableToMarkdown(table);
+                    const textNode = document.createTextNode(markdown);
+                    table.parentNode.replaceChild(textNode, table);
+                });
+                
+                // Получаем итоговый текст
+                let content = tempDiv.innerText
+                    .replace(/\u00A0/g, ' ')
+                    .trimEnd();
+                
+                this.hiddenField.value = content;
+            }
+            
+            // Вызывается при изменении таблицы
+            onTableModified() {
+                this.isProcessing = true;
+                this.updateHiddenField();
+                
+                if (typeof this.onChange === 'function') {
+                    this.onChange();
+                }
+                
+                setTimeout(() => {
+                    this.isProcessing = false;
+                }, 100);
+            }
+            
+            // Получить текущий контент
+            getContent() {
+                this.updateHiddenField();
+                return this.hiddenField.value;
+            }
+            
+            // Установить контент
+            setContent(content) {
+                this.editor.innerHTML = content;
+                this.convertMarkdownTablesToHTML();
+                if (this.visualEditor) {
+                    this.visualEditor.scanTables();
+                }
+            }
+        }
+        
+        // Глобальная функция для инициализации
+        function initTableEditorIntegration() {
+            if (typeof VisualTableEditor !== 'undefined') {
+                window.tableEditorIntegration = new TableEditorIntegration(
+                    'markdownEditor',
+                    'markdownPreview',
+                    'hiddenMarkdownContent',
+                    () => {
+                        updatePreview();
+                    }
+                );
+            }
+        }
+    </script>
 
     <style>
         .markdown-editor {

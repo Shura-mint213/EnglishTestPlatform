@@ -523,18 +523,21 @@
             md += '\n';
             md += '|';
 
+            // Пустые заголовки
             for(let c=1;c<=cols;c++)
-                md += ` Заголовок ${c} |`;
+                md += ` |`;
             md += '\n|';
 
+            // Разделитель
             for(let c=0;c<cols;c++)
                 md += ' --- |';
             md += '\n';
 
+            // Пустые ячейки
             for(let r=1;r<rows;r++){
                 md += '|';
                 for(let c=1;c<=cols;c++)
-                    md += ` Ячейка ${r}.${c} |`;
+                    md += ` |`;
                 md += '\n';
             }
 
@@ -548,6 +551,11 @@
 
             updateHiddenField();
             updatePreview();
+            
+            // Инициализируем визуальный редактор после вставки таблицы
+            setTimeout(() => {
+                initVisualTableEditor();
+            }, 300);
         }
 
         // Обработчики кнопок панели инструментов
@@ -1031,8 +1039,32 @@
                 updatePreview();
             }
             updateHiddenField();
+            
+            // Инициализация визуального редактора таблиц после загрузки предпросмотра
+            setTimeout(() => {
+                initVisualTableEditor();
+            }, 500);
         });
+        
+        // Функция инициализации визуального редактора таблиц
+        function initVisualTableEditor() {
+            if (typeof VisualTableEditor !== 'undefined') {
+                const previewDiv = document.getElementById('markdownPreview');
+                if (previewDiv) {
+                    window.visualTableEditor = new VisualTableEditor('markdownPreview', onTableChange);
+                }
+            }
+        }
+        
+        // Callback при изменении таблицы
+        function onTableChange(table) {
+            updateHiddenField();
+            updatePreview();
+        }
     </script>
+    
+    <!-- Подключение визуального редактора таблиц -->
+    <script src="~/js/visual-table-editor.js"></script>
 
     <style>
         .markdown-editor {

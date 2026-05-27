@@ -1,1 +1,1 @@
-Nothing needs to be added to the .gitignore file based on the provided file changes. The modified file 'EnglishTestPlatform/wwwroot/js/visual-table-editor.js' is a source code file that should not be ignored.
+Nothing should be ignored based on the provided file changes, as they only include source files (.cshtml) without any build artifacts, dependencies, or temporary files.

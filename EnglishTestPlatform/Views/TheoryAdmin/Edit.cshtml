@@ -747,8 +747,32 @@
                 updatePreview();
             }
             updateHiddenField();
+            
+            // Инициализация визуального редактора таблиц после загрузки предпросмотра
+            setTimeout(() => {
+                initVisualTableEditor();
+            }, 500);
         });
+        
+        // Функция инициализации визуального редактора таблиц
+        function initVisualTableEditor() {
+            if (typeof VisualTableEditor !== 'undefined') {
+                const previewDiv = document.getElementById('markdownPreview');
+                if (previewDiv) {
+                    window.visualTableEditor = new VisualTableEditor('markdownPreview', onTableChange);
+                }
+            }
+        }
+        
+        // Callback при изменении таблицы
+        function onTableChange(table) {
+            updateHiddenField();
+            updatePreview();
+        }
     </script>
+    
+    <!-- Подключение визуального редактора таблиц -->
+    <script src="~/js/visual-table-editor.js"></script>
 
     <style>
         .markdown-editor {

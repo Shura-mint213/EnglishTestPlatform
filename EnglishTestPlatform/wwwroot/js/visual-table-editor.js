@@ -1,13 +1,21 @@
 /**
  * Visual Table Editor - Интерактивный редактор таблиц
  * Позволяет визуально редактировать таблицы с возможностью добавления/удаления строк и столбцов
+ * 
+ * Особенности:
+ * - WYSIWYG режим - таблицы отображаются как в обычных редакторах
+ * - Плюсики для добавления строк/столбцов появляются только при наведении на границы таблицы
+ * - Каждая таблица независима - действия применяются только к той таблице, с которой взаимодействует пользователь
+ * - Пустые ячейки при добавлении (без текста "Новый" или "Новая ячейка")
+ * - Навигация клавиатурой (Tab, Enter, Ctrl+стрелки)
  */
 
 class VisualTableEditor {
-    constructor(containerId) {
+    constructor(containerId, onChangeCallback) {
         this.container = document.getElementById(containerId);
         this.tables = [];
         this.activeTableIndex = -1;
+        this.onChange = onChangeCallback || null;
         this.init();
     }
 
@@ -53,7 +61,7 @@ class VisualTableEditor {
         if (!adderContainer) {
             adderContainer = document.createElement('div');
             adderContainer.className = 'column-adder-container';
-            adderContainer.style.cssText = 'position: absolute; top: -20px; left: 0; right: 0; display: flex; height: 20px; z-index: 100;';
+            adderContainer.style.cssText = 'position: absolute; top: -20px; left: 0; right: 0; display: flex; height: 20px; z-index: 100; pointer-events: none;';
             table.appendChild(adderContainer);
         }
 
@@ -79,6 +87,7 @@ class VisualTableEditor {
             opacity: 0;
             transition: opacity 0.2s;
             position: relative;
+            pointer-events: auto;
         `;
         
         // Иконка плюса
@@ -97,6 +106,7 @@ class VisualTableEditor {
             font-weight: bold;
             opacity: 0;
             transition: opacity 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         `;
         
         adder.appendChild(plusIcon);
@@ -131,7 +141,7 @@ class VisualTableEditor {
         if (!rowAdderContainer) {
             rowAdderContainer = document.createElement('div');
             rowAdderContainer.className = 'row-adder-container';
-            rowAdderContainer.style.cssText = 'position: absolute; top: 0; bottom: 0; left: -20px; display: flex; flex-direction: column; width: 20px; z-index: 100;';
+            rowAdderContainer.style.cssText = 'position: absolute; top: 0; bottom: 0; left: -20px; display: flex; flex-direction: column; width: 20px; z-index: 100; pointer-events: none;';
             table.appendChild(rowAdderContainer);
         }
 
@@ -156,6 +166,7 @@ class VisualTableEditor {
             cursor: pointer;
             opacity: 0;
             transition: opacity 0.2s;
+            pointer-events: auto;
         `;
 
         // Иконка плюса
@@ -174,6 +185,7 @@ class VisualTableEditor {
             font-weight: bold;
             opacity: 0;
             transition: opacity 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         `;
 
         adder.appendChild(plusIcon);
@@ -204,18 +216,31 @@ class VisualTableEditor {
         cells.forEach(cell => {
             cell.contentEditable = 'true';
             cell.style.outline = 'none';
+            cell.style.border = '1px solid #dee2e6';
+            cell.style.padding = '8px';
             
             // Обработка фокуса
             cell.addEventListener('focus', () => {
                 cell.classList.add('cell-focused');
+                cell.style.backgroundColor = '#f0f7ff';
             });
 
             cell.addEventListener('blur', () => {
                 cell.classList.remove('cell-focused');
+                cell.style.backgroundColor = '';
             });
 
             // Навигация клавиатурой
             cell.addEventListener('keydown', (e) => this.handleCellKeydown(e, table));
+            
+            // Контекстное меню по правому клику
+            cell.addEventListener('contextmenu', (e) => {
+                const row = cell.parentElement;
+                const rows = Array.from(table.querySelectorAll('tr'));
+                const rowIndex = rows.indexOf(row);
+                const cellIndex = Array.from(row.querySelectorAll('td, th')).indexOf(cell);
+                this.showTableContextMenu(e, table, rowIndex, cellIndex);
+            });
         });
     }
 
@@ -403,6 +428,96 @@ class VisualTableEditor {
         this.onTableChange(table);
     }
 
+    // Показать контекстное меню для таблицы
+    showTableContextMenu(e, table, rowIndex, cellIndex) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Удаляем старое меню если есть
+        const existingMenu = document.getElementById('visual-table-context-menu');
+        if (existingMenu) existingMenu.remove();
+
+        const menu = document.createElement('div');
+        menu.id = 'visual-table-context-menu';
+        menu.style.cssText = `
+            position: fixed;
+            z-index: 9999;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 200px;
+        `;
+
+        menu.innerHTML = `
+            <div class=\"dropdown-item\" style="padding: 8px 12px; cursor: pointer;" data-action="add-row-above">➕ Добавить строку выше</div>
+            <div class="dropdown-item" style="padding: 8px 12px; cursor: pointer;" data-action="add-row-below">➕ Добавить строку ниже</div>
+            <div class="dropdown-item" style="padding: 8px 12px; cursor: pointer;" data-action="add-column-left">➕ Добавить столбец слева</div>
+            <div class="dropdown-item" style="padding: 8px 12px; cursor: pointer;" data-action="add-column-right">➕ Добавить столбец справа</div>
+            <hr style="margin: 4px 0;">
+            <div class="dropdown-item" style="padding: 8px 12px; cursor: pointer; color: #dc3545;" data-action="delete-row">❌ Удалить строку</div>
+            <div class="dropdown-item" style="padding: 8px 12px; cursor: pointer; color: #dc3545;" data-action="delete-column">❌ Удалить столбец</div>
+        `;
+
+        document.body.appendChild(menu);
+
+        // Позиционируем меню
+        let x = e.pageX;
+        let y = e.pageY;
+        
+        const rect = menu.getBoundingClientRect();
+        if (x + rect.width > window.innerWidth) {
+            x = window.innerWidth - rect.width - 10;
+        }
+        if (y + rect.height > window.innerHeight) {
+            y = window.innerHeight - rect.height - 10;
+        }
+
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+
+        // Обработчики кликов
+        menu.querySelectorAll('[data-action]').forEach(item => {
+            item.addEventListener('click', () => {
+                const action = item.dataset.action;
+                this.handleContextMenuAction(action, table, rowIndex, cellIndex);
+                menu.remove();
+            });
+        });
+
+        // Закрытие при клике вне меню
+        setTimeout(() => {
+            document.addEventListener('click', function closeMenu() {
+                menu.remove();
+                document.removeEventListener('click', closeMenu);
+            });
+        }, 100);
+    }
+
+    // Обработка действий контекстного меню
+    handleContextMenuAction(action, table, rowIndex, cellIndex) {
+        switch (action) {
+            case 'add-row-above':
+                this.addRow(table, rowIndex);
+                break;
+            case 'add-row-below':
+                this.addRow(table, rowIndex + 1);
+                break;
+            case 'add-column-left':
+                this.addColumn(table, cellIndex);
+                break;
+            case 'add-column-right':
+                this.addColumn(table, cellIndex + 1);
+                break;
+            case 'delete-row':
+                this.removeRow(table, rowIndex);
+                break;
+            case 'delete-column':
+                this.removeColumn(table, cellIndex);
+                break;
+        }
+    }
+
     // Конвертация таблицы в Markdown
     tableToMarkdown(table) {
         const rows = Array.from(table.querySelectorAll('tr'));
@@ -454,9 +569,22 @@ class VisualTableEditor {
                 cell.style.cssText = 'border: 1px solid #dee2e6; padding: 8px; outline: none;';
                 cell.innerText = cellContent.trim();
                 
-                cell.addEventListener('focus', () => cell.classList.add('cell-focused'));
-                cell.addEventListener('blur', () => cell.classList.remove('cell-focused'));
+                cell.addEventListener('focus', () => {
+                    cell.classList.add('cell-focused');
+                    cell.style.backgroundColor = '#f0f7ff';
+                });
+                cell.addEventListener('blur', () => {
+                    cell.classList.remove('cell-focused');
+                    cell.style.backgroundColor = '';
+                });
                 cell.addEventListener('keydown', (e) => this.handleCellKeydown(e, table));
+                cell.addEventListener('contextmenu', (e) => {
+                    const row = cell.parentElement;
+                    const rows = Array.from(table.querySelectorAll('tr'));
+                    const rowIndex = rows.indexOf(row);
+                    const cellIndex = Array.from(row.querySelectorAll('td, th')).indexOf(cell);
+                    this.showTableContextMenu(e, table, rowIndex, cellIndex);
+                });
                 
                 tr.appendChild(cell);
             });

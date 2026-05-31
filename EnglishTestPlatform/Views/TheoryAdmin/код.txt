@@ -1,10 +1,858 @@
-﻿@model EnglishTestPlatform.ViewModel.TheoryViewModel
-@{
-    ViewData["Title"] = "Создать теорию";
+wwwroot\css\visual-table-editor.css
+/* Visual Table Editor Styles */
+
+/* Основной контейнер таблицы */
+.visual-table-enhanced {
+    position: relative;
+    border-collapse: collapse;
+    width: 100%;
+    background: white;
 }
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/visual-table-editor.css" />
+
+    /* Заголовки */
+    .visual-table-enhanced th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+    }
+
+        /* Активная ячейка */
+        .visual-table-enhanced td.cell-focused,
+        .visual-table-enhanced th.cell-focused {
+            background-color: #e3f2fd;
+            box-shadow: inset 0 0 0 2px #007bff;
+            outline: none;
+        }
+
+    /* Hover эффект для ячеек */
+    .visual-table-enhanced tr:hover td,
+    .visual-table-enhanced tr:hover th {
+        background-color: #f1f3f5;
+    }
+
+/* Контейнеры для плюсиков */
+.column-adder-container,
+.row-adder-container {
+    pointer-events: none; /* Чтобы не мешали, пока плюсики невидимы */
+}
+
+    .column-adder-container > *,
+    .row-adder-container > * {
+        pointer-events: auto; /* Включаем события для самих плюсиков */
+    }
+
+/* Плюсики для столбцов */
+.column-adder {
+    position: relative;
+}
+
+    .column-adder span {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transform: scale(0.8);
+        transition: transform 0.2s, opacity 0.2s;
+    }
+
+    .column-adder:hover span {
+        transform: scale(1.1);
+    }
+
+/* Плюсики для строк */
+.row-adder {
+    position: relative;
+}
+
+    .row-adder span {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transform: scale(0.8);
+        transition: transform 0.2s, opacity 0.2s;
+    }
+
+    .row-adder:hover span {
+        transform: scale(1.1);
+    }
+
+/* Стили для режима редактирования */
+.markdown-editor table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0;
+}
+
+    .markdown-editor table th,
+    .markdown-editor table td {
+        border: 1px solid #dee2e6;
+        padding: 8px;
+        min-width: 80px;
+    }
+
+    .markdown-editor table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .visual-table-enhanced {
+        font-size: 14px;
+    }
+
+        .visual-table-enhanced th,
+        .visual-table-enhanced td {
+            padding: 6px 8px;
+        }
+}
+
+/* Печать */
+@media print {
+    .column-adder-container,
+    .row-adder-container {
+        display: none !important;
+    }
+
+    .visual-table-enhanced th,
+    .visual-table-enhanced td {
+        border: 1px solid #000;
+    }
+}
+
+/* Тёмная тема (опционально) */
+[data-theme="dark"] .visual-table-enhanced {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+    [data-theme="dark"] .visual-table-enhanced th,
+    [data-theme="dark"] .visual-table-enhanced td {
+        border-color: #444;
+    }
+
+    [data-theme="dark"] .visual-table-enhanced th {
+        background-color: #2d2d2d;
+        color: #fff;
+    }
+
+        [data-theme="dark"] .visual-table-enhanced td.cell-focused,
+        [data-theme="dark"] .visual-table-enhanced th.cell-focused {
+            background-color: #1a3a5c;
+            box-shadow: inset 0 0 0 2px #4dabf7;
+        }
+
+.visual-table {
+    position: relative;
+}
+
+.table-add-col,
+.table-add-row {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: #667eea;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.visual-table,
+.visual-table-enhanced {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+    .visual-table td,
+    .visual-table tr {
+        height: 40px !important;
+        min-height: 40px !important;
+    }
+
+    .visual-table td,
+    .visual-table th,
+    .visual-table-enhanced td,
+    .visual-table-enhanced th {
+        min-width: 120px;
+        padding: 8px 12px;
+        vertical-align: middle;
+        cursor: text;
+        box-sizing: border-box;
+    }
+
+    /* Ячейки таблицы */
+    .visual-table-enhanced th,
+    .visual-table-enhanced td {
+        border: 1px solid #dee2e6;
+        text-align: left;
+        transition: background-color 0.2s, box-shadow 0.2s;
+    }
+
+        .visual-table td:focus,
+        .visual-table th:focus,
+        .visual-table-enhanced td:focus,
+        .visual-table-enhanced th:focus {
+            outline: 2px solid #4f46e5;
+        }
+
+wwwroot\js\visual-table-editor.js
+
+/**
+ * Visual Table Editor - Интерактивный редактор таблиц
+ * Позволяет визуально редактировать таблицы с возможностью добавления/удаления строк и столбцов
+ * 
+ * Особенности:
+ * - WYSIWYG режим - таблицы отображаются как в обычных редакторах
+ * - Плюсики для добавления строк/столбцов появляются только при наведении на границы таблицы
+ * - Каждая таблица независима - действия применяются только к той таблице, с которой взаимодействует пользователь
+ * - Пустые ячейки при добавлении (без текста "Новый" или "Новая ячейка")
+ * - Навигация клавиатурой (Tab, Enter, Ctrl+стрелки)
+ */
+
+class VisualTableEditor {
+    // Сканирование всех таблиц в контейнере
+    scanTables() {
+        this.tables = Array.from(this.container.querySelectorAll('table'));
+        this.tables.forEach((table, index) => {
+            table.dataset.tableIndex = index;
+            this.enhanceTable(table);
+        });
+    }
+
+    tableToMarkdown(table) {
+        let md = '';
+        const rows =
+            Array.from(table.rows);
+        if (!rows.length)
+            return '';
+        rows.forEach((row, rowIndex) => {
+            md += '|';
+            Array.from(row.cells)
+                .forEach(cell => {
+                    const value =
+                        (cell.innerText || '')
+                            .replace(/\|/g, '\\|');
+                    md += value + '|';
+                });
+            md += '\n';
+            if (rowIndex === 0) {
+                md += '|';
+                Array.from(row.cells)
+                    .forEach(() => {
+                        md += '---|';
+                    });
+                md += '\n';
+            }
+        });
+        return md;
+    }
+
+    // Улучшение таблицы интерактивными элементами
+    enhanceTable(table) {
+        if (table.classList.contains('visual-table-enhanced')) return;
+
+        table.classList.add('visual-table-enhanced');
+        table.style.position = 'relative';
+
+        // Добавляем обработчики наведения для показа плюсиков
+        this.setupColumnAdders(table);
+        this.setupRowAdders(table);
+
+        // Делаем ячейки редактируемыми
+        this.makeCellsEditable(table);
+
+        table.addEventListener('mouseenter', () => {
+            table.querySelectorAll(
+                '.column-adder, .row-adder'
+            ).forEach(el => {
+                el.style.opacity = '1';
+                const span =
+                    el.querySelector('span');
+                if (span)
+                    span.style.opacity = '1';
+            });
+        });
+        table.addEventListener('mouseleave', () => {
+            table.querySelectorAll(
+                '.column-adder, .row-adder'
+            ).forEach(el => {
+                el.style.opacity = '0';
+                const span =
+                    el.querySelector('span');
+                if (span)
+                    span.style.opacity = '0';
+            });
+        });
+    }
+
+    // Настройка добавления столбцов
+    setupColumnAdders(table) {
+        const headerRow = table.querySelector('tr:first-child');
+        if (!headerRow) return;
+
+        const cells = Array.from(headerRow.querySelectorAll('th, td'));
+        const columnCount = cells.length;
+
+        // Создаём контейнер для плюсиков над таблицей
+        let adderContainer = table.querySelector('.column-adder-container');
+        if (!adderContainer) {
+            adderContainer = document.createElement('div');
+            adderContainer.className = 'column-adder-container';
+            adderContainer.style.cssText = 'position: absolute; top: -20px; left: 0; right: 0; display: flex; height: 20px; z-index: 100; pointer-events: none;';
+            table.appendChild(adderContainer);
+        }
+
+        // Очищаем и пересоздаём плюсики
+        adderContainer.innerHTML = '';
+
+        for (let i = 0; i <= columnCount; i++) {
+            const adder = this.createColumnAdder(table, i);
+            adderContainer.appendChild(adder);
+        }
+    }
+
+    // Создание плюсика для добавления столбца
+    createColumnAdder(table, columnIndex) {
+        const adder = document.createElement('div');
+        adder.className = 'column-adder';
+        adder.style.cssText = `
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0.35;
+            transition: opacity 0.2s;
+            position: relative;
+            pointer-events: auto;
+        `;
+
+        // Иконка плюса
+        const plusIcon = document.createElement('span');
+        plusIcon.innerHTML = '+';
+        plusIcon.style.cssText = `
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            opacity: 0.35;
+            transition: opacity 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        `;
+
+        adder.appendChild(plusIcon);
+
+        // Показываем при наведении на область
+        adder.addEventListener('mouseenter', () => {
+            plusIcon.style.opacity = '1';
+            adder.style.opacity = '1';
+        });
+
+        adder.addEventListener('mouseleave', () => {
+            plusIcon.style.opacity = '0';
+            adder.style.opacity = '0';
+        });
+
+        // Клик для добавления столбца
+        adder.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.addColumn(table, columnIndex);
+        });
+
+        return adder;
+    }
+
+    // Настройка добавления строк
+    setupRowAdders(table) {
+        const rows = Array.from(table.querySelectorAll('tr'));
+        const rowCount = rows.length;
+
+        // Создаём контейнер для плюсиков слева от таблицы
+        let rowAdderContainer = table.querySelector('.row-adder-container');
+        if (!rowAdderContainer) {
+            rowAdderContainer = document.createElement('div');
+            rowAdderContainer.className = 'row-adder-container';
+            rowAdderContainer.style.cssText = 'position: absolute; top: 0; bottom: 0; left: -20px; display: flex; flex-direction: column; width: 20px; z-index: 100; pointer-events: none;';
+            table.appendChild(rowAdderContainer);
+        }
+
+        // Очищаем и пересоздаём плюсики
+        rowAdderContainer.innerHTML = '';
+
+        for (let i = 0; i <= rowCount; i++) {
+            const adder = this.createRowAdder(table, i);
+            rowAdderContainer.appendChild(adder);
+        }
+    }
+
+    // Создание плюсика для добавления строки
+    createRowAdder(table, rowIndex) {
+        const adder = document.createElement('div');
+        adder.className = 'row-adder';
+        adder.style.cssText = `
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0.35;
+            transition: opacity 0.2s;
+            pointer-events: auto;
+        `;
+
+        // Иконка плюса
+        const plusIcon = document.createElement('span');
+        plusIcon.innerHTML = '+';
+        plusIcon.style.cssText = `
+            background: #28a745;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            opacity: 0.35;
+            transition: opacity 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        `;
+
+        adder.appendChild(plusIcon);
+
+        // Показываем при наведении на область
+        adder.addEventListener('mouseenter', () => {
+            plusIcon.style.opacity = '1';
+            adder.style.opacity = '1';
+        });
+
+        adder.addEventListener('mouseleave', () => {
+            plusIcon.style.opacity = '0';
+            adder.style.opacity = '0';
+        });
+
+        // Клик для добавления строки
+        adder.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.addRow(table, rowIndex);
+        });
+
+        return adder;
+    }
+
+    // Делаем ячейки редактируемыми
+    makeCellsEditable(table) {
+        const cells = table.querySelectorAll('td, th');
+        cells.forEach(cell => {
+            cell.contentEditable = 'true';
+            cell.style.outline = 'none';
+            cell.style.border = '1px solid #dee2e6';
+            cell.style.padding = '8px';
+
+            // Обработка фокуса
+            cell.addEventListener('focus', () => {
+                cell.classList.add('cell-focused');
+                cell.style.backgroundColor = '#f0f7ff';
+            });
+
+            cell.addEventListener('blur', () => {
+                cell.classList.remove('cell-focused');
+                cell.style.backgroundColor = '';
+            });
+
+            // Навигация клавиатурой
+            cell.addEventListener('keydown', (e) => this.handleCellKeydown(e, table));
+
+            // Контекстное меню по правому клику
+            cell.addEventListener('contextmenu', (e) => {
+                const row = cell.parentElement;
+                const rows = Array.from(table.querySelectorAll('tr'));
+                const rowIndex = rows.indexOf(row);
+                const cellIndex = Array.from(row.querySelectorAll('td, th')).indexOf(cell);
+                this.showTableContextMenu(e, table, rowIndex, cellIndex);
+            });
+        });
+    }
+
+    // Обработка нажатий клавиш в ячейке
+    handleCellKeydown(e, table) {
+        const currentCell = e.target;
+        const row = currentCell.parentElement;
+        const cells = Array.from(row.querySelectorAll('td, th'));
+        const cellIndex = cells.indexOf(currentCell);
+        const rows = Array.from(table.querySelectorAll('tr'));
+        const rowIndex = rows.indexOf(row);
+
+        switch (e.key) {
+            case 'Tab':
+                e.preventDefault();
+                if (e.shiftKey) {
+                    // Shift+Tab - предыдущая ячейка
+                    this.focusCell(table, rowIndex, cellIndex - 1);
+                } else {
+                    // Tab - следующая ячейка
+                    this.focusCell(table, rowIndex, cellIndex + 1);
+                }
+                break;
+            case 'Enter':
+                if (!e.shiftKey) {
+                    e.preventDefault();
+                    // Enter - следующая строка
+                    this.focusCell(table, rowIndex + 1, cellIndex);
+                }
+                break;
+            case 'ArrowUp':
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    this.focusCell(table, rowIndex - 1, cellIndex);
+                }
+                break;
+            case 'ArrowDown':
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    this.focusCell(table, rowIndex + 1, cellIndex);
+                }
+                break;
+            case 'ArrowLeft':
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    this.focusCell(table, rowIndex, cellIndex - 1);
+                }
+                break;
+            case 'ArrowRight':
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    this.focusCell(table, rowIndex, cellIndex + 1);
+                }
+                break;
+        }
+    }
+
+    // Фокус на ячейку
+    focusCell(table, rowIndex, cellIndex) {
+        const rows = Array.from(table.querySelectorAll('tr'));
+        if (rowIndex < 0 || rowIndex >= rows.length) return;
+
+        const row = rows[rowIndex];
+        const cells = Array.from(row.querySelectorAll('td, th'));
+        if (cellIndex < 0 || cellIndex >= cells.length) return;
+
+        cells[cellIndex].focus();
+    }
+
+    // Добавление столбца
+    addColumn(table, columnIndex) {
+        const rows = Array.from(table.querySelectorAll('tr'));
+
+        rows.forEach((row, rowIndex) => {
+            const cells = Array.from(row.querySelectorAll('th, td'));
+            const newCell = document.createElement(rowIndex === 0 ? 'th' : 'td');
+            newCell.contentEditable = 'true';
+            newCell.style.outline = 'none';
+
+            // Пустая ячейка без текста "Новый"
+            newCell.innerHTML = '';
+
+            // Добавляем обработчики
+            newCell.addEventListener('focus', () => newCell.classList.add('cell-focused'));
+            newCell.addEventListener('blur', () => newCell.classList.remove('cell-focused'));
+            newCell.addEventListener('keydown', (e) => this.handleCellKeydown(e, table));
+
+            if (columnIndex >= cells.length) {
+                row.appendChild(newCell);
+            } else {
+                row.insertBefore(newCell, cells[columnIndex]);
+            }
+
+            // Если это первая строка и новая ячейка, фокусируемся на ней
+            if (rowIndex === 0 && columnIndex === cells.length) {
+                setTimeout(() => newCell.focus(), 10);
+            }
+        });
+
+        // Обновляем плюсик
+        this.setupColumnAdders(table);
+        this.setupRowAdders(table);
+
+        // Событие изменения
+        this.onTableChange(table);
+    }
+
+    // Добавление строки
+    addRow(table, rowIndex) {
+        const rows = Array.from(table.querySelectorAll('tr'));
+        const headerRow = rows[0];
+        const columnCount = headerRow ? headerRow.querySelectorAll('th, td').length : 3;
+
+        const newRow = document.createElement('tr');
+
+        for (let i = 0; i < columnCount; i++) {
+            const cell = document.createElement('td');
+            cell.contentEditable = 'true';
+            cell.style.outline = 'none';
+            cell.innerHTML = ''; // Пустая ячейка
+
+            cell.addEventListener('focus', () => cell.classList.add('cell-focused'));
+            cell.addEventListener('blur', () => cell.classList.remove('cell-focused'));
+            cell.addEventListener('keydown', (e) => this.handleCellKeydown(e, table));
+
+            newRow.appendChild(cell);
+        }
+
+        if (rowIndex >= rows.length) {
+            table.appendChild(newRow);
+            // Фокус на первую ячейку новой строки
+            setTimeout(() => {
+                const firstCell = newRow.querySelector('td:first-child');
+                if (firstCell) firstCell.focus();
+            }, 10);
+        } else {
+            table.insertBefore(newRow, rows[rowIndex]);
+        }
+
+        // Обновляем плюсик
+        this.setupColumnAdders(table);
+        this.setupRowAdders(table);
+
+        // Событие изменения
+        this.onTableChange(table);
+    }
+
+    // Удаление столбца
+    removeColumn(table, columnIndex) {
+        const rows = Array.from(table.querySelectorAll('tr'));
+
+        rows.forEach(row => {
+            const cells = Array.from(row.querySelectorAll('th, td'));
+            if (cells.length > 2 && columnIndex < cells.length) {
+                cells[columnIndex].remove();
+            }
+        });
+
+        this.setupColumnAdders(table);
+        this.setupRowAdders(table);
+        this.onTableChange(table);
+    }
+
+    // Удаление строки
+    removeRow(table, rowIndex) {
+        const rows = Array.from(table.querySelectorAll('tr'));
+
+        // Не удаляем заголовок
+        if (rowIndex === 0) {
+            alert('Нельзя удалить строку заголовка!');
+            return;
+        }
+
+        // Оставляем минимум одну строку данных
+        if (rows.length <= 2) {
+            alert('В таблице должна быть хотя бы одна строка данных!');
+            return;
+        }
+
+        if (rowIndex < rows.length) {
+            rows[rowIndex].remove();
+        }
+
+        this.setupRowAdders(table);
+        this.onTableChange(table);
+    }
+
+    // Показать контекстное меню для таблицы
+    showTableContextMenu(e, table, rowIndex, cellIndex) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Удаляем старое меню если есть
+        const existingMenu = document.getElementById('visual-table-context-menu');
+        if (existingMenu) existingMenu.remove();
+
+        const menu = document.createElement('div');
+        menu.id = 'visual-table-context-menu';
+        menu.style.cssText = `
+            position: fixed;
+            z-index: 9999;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 200px;
+        `;
+
+        menu.innerHTML = `
+            <div class=\"dropdown-item\" style="padding: 8px 12px; cursor: pointer;" data-action="add-row-above">➕ Добавить строку выше</div>
+            <div class="dropdown-item" style="padding: 8px 12px; cursor: pointer;" data-action="add-row-below">➕ Добавить строку ниже</div>
+            <div class="dropdown-item" style="padding: 8px 12px; cursor: pointer;" data-action="add-column-left">➕ Добавить столбец слева</div>
+            <div class="dropdown-item" style="padding: 8px 12px; cursor: pointer;" data-action="add-column-right">➕ Добавить столбец справа</div>
+            <hr style="margin: 4px 0;">
+            <div class="dropdown-item" style="padding: 8px 12px; cursor: pointer; color: #dc3545;" data-action="delete-row">❌ Удалить строку</div>
+            <div class="dropdown-item" style="padding: 8px 12px; cursor: pointer; color: #dc3545;" data-action="delete-column">❌ Удалить столбец</div>
+        `;
+
+        document.body.appendChild(menu);
+
+        // Позиционируем меню
+        let x = e.pageX;
+        let y = e.pageY;
+
+        const rect = menu.getBoundingClientRect();
+        if (x + rect.width > window.innerWidth) {
+            x = window.innerWidth - rect.width - 10;
+        }
+        if (y + rect.height > window.innerHeight) {
+            y = window.innerHeight - rect.height - 10;
+        }
+
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+
+        // Обработчики кликов
+        menu.querySelectorAll('[data-action]').forEach(item => {
+            item.addEventListener('click', () => {
+                const action = item.dataset.action;
+                this.handleContextMenuAction(action, table, rowIndex, cellIndex);
+                menu.remove();
+            });
+        });
+
+        // Закрытие при клике вне меню
+        setTimeout(() => {
+            document.addEventListener('click', function closeMenu() {
+                menu.remove();
+                document.removeEventListener('click', closeMenu);
+            });
+        }, 100);
+    }
+
+    // Обработка действий контекстного меню
+    handleContextMenuAction(action, table, rowIndex, cellIndex) {
+        switch (action) {
+            case 'add-row-above':
+                this.addRow(table, rowIndex);
+                break;
+            case 'add-row-below':
+                this.addRow(table, rowIndex + 1);
+                break;
+            case 'add-column-left':
+                this.addColumn(table, cellIndex);
+                break;
+            case 'add-column-right':
+                this.addColumn(table, cellIndex + 1);
+                break;
+            case 'delete-row':
+                this.removeRow(table, rowIndex);
+                break;
+            case 'delete-column':
+                this.removeColumn(table, cellIndex);
+                break;
+        }
+    }
+
+   
+
+    // Конвертация Markdown в HTML таблицу
+    markdownToTable(markdown) {
+        const lines = markdown.trim().split('\n').filter(line => line.trim());
+        if (lines.length === 0) return null;
+
+        const table = document.createElement('table');
+        table.className = 'table table-bordered visual-table-enhanced';
+        table.style.cssText = 'border-collapse: collapse; width: 100%; margin: 10px 0;';
+
+        lines.forEach((line, index) => {
+            // Пропускаем строки-разделители
+            if (line.includes('---')) return;
+
+            const cells = line.split('|').filter((c, i, arr) => i > 0 && i < arr.length - 1);
+            if (cells.length === 0) return;
+
+            const tr = document.createElement('tr');
+
+            cells.forEach(cellContent => {
+                const cell = document.createElement(index === 0 ? 'th' : 'td');
+                cell.contentEditable = 'true';
+                cell.style.cssText = 'border: 1px solid #dee2e6; padding: 8px; outline: none;';
+                cell.innerText = cellContent.trim();
+
+                cell.addEventListener('focus', () => {
+                    cell.classList.add('cell-focused');
+                    cell.style.backgroundColor = '#f0f7ff';
+                });
+                cell.addEventListener('blur', () => {
+                    cell.classList.remove('cell-focused');
+                    cell.style.backgroundColor = '';
+                });
+                cell.addEventListener('keydown', (e) => this.handleCellKeydown(e, table));
+                cell.addEventListener('contextmenu', (e) => {
+                    const row = cell.parentElement;
+                    const rows = Array.from(table.querySelectorAll('tr'));
+                    const rowIndex = rows.indexOf(row);
+                    const cellIndex = Array.from(row.querySelectorAll('td, th')).indexOf(cell);
+                    this.showTableContextMenu(e, table, rowIndex, cellIndex);
+                });
+
+                tr.appendChild(cell);
+            });
+
+            table.appendChild(tr);
+        });
+
+        return table;
+    }
+
+    // Обновление плюсиков после изменения
+    onTableChange(table) {
+        // Здесь можно вызвать callback для уведомления об изменении
+        if (typeof this.onChange === 'function') {
+            this.onChange(table);
+        }
+    }
+
+    // Привязка глобальных обработчиков
+    attachEventListeners() {
+        // Пересчёт позиций при изменении размера окна
+        window.addEventListener('resize', () => {
+            this.tables.forEach(table => {
+                this.setupColumnAdders(table);
+                this.setupRowAdders(table);
+            });
+        });
+    }
+
+    // Обновить все таблицы из Markdown контента
+    refreshFromContent(content) {
+        // Парсим контент и находим все таблицы
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        const tables = tempDiv.querySelectorAll('table');
+
+        // Обновляем существующие или создаём новые
+        tables.forEach((table, index) => {
+            if (index < this.tables.length) {
+                // Заменяем содержимое существующей таблицы
+                this.tables[index].innerHTML = table.innerHTML;
+                this.enhanceTable(this.tables[index]);
+            }
+        });
+    }
+}
+
+// Экспорт для использования
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = VisualTableEditor;
+}
+
+
+представления Create.cshtml:
+@model EnglishTestPlatform.ViewModel.TheoryViewModel
+@{
+    ViewData["Title"] = "Создать теорию";
 }
 
 <div class="container mt-4">
@@ -125,11 +973,10 @@
                                     <a class="dropdown-item" href="#" data-command="image">🖼️ Вставить изображение <small class="text-muted">(Ctrl+Shift+I)</small></a>
                                 </div>
                                 <!-- Редактируемая область с contenteditable -->
-                                <div id="markdownEditor"
-                                     class="form-control markdown-editor"
-                                     contenteditable="true"
-                                     style="min-height: 400px; max-height: 600px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.6;">
-                                    @(Model.MarkdownContent ?? "")
+                                <div id="markdownEditor" class="form-control markdown-editor" contenteditable="true"
+                                     style="min-height: 400px; max-height: 600px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.6;"
+                                     placeholder="# Заголовок&#10;&#10;Ваш текст в формате Markdown...">
+                                    @Model.MarkdownContent
                                 </div>
                                 <!-- Скрытое поле для отправки данных -->
                                 <input type="hidden" name="MarkdownContent" id="hiddenMarkdownContent" value="@Model.MarkdownContent" />
@@ -648,6 +1495,272 @@
             }
         });
 
+        // // Поиск таблицы в текущей позиции
+        // function findTableContext(){
+        //     const sel =
+        //         window.getSelection();
+        //     if(!sel.rangeCount)
+        //         return null;
+
+        //     const text =
+        //         editor.innerText;
+        //     const cursor =
+        //         sel.anchorOffset;
+        //     const lines =
+        //         text.split(/\r?\n/);
+        //     let pos = 0;
+
+        //     for(let i=0;i<lines.length;i++){
+        //         const len =
+        //             lines[i].length + 1;
+        //         if(
+        //             cursor >= pos &&
+        //             cursor <= pos + len
+        //         ){
+        //             if(
+        //                 lines[i]
+        //                 .trim()
+        //                 .startsWith('|')
+        //             ){
+        //                 return {
+        //                     lines,
+        //                     lineIndex:i
+        //                 };
+        //             }
+        //         }
+        //         pos += len;
+        //     }
+        //     return null;
+        // }
+
+        // // Показать контекстное меню для таблиц
+        // function showTableContextMenu(x, y, tableContext) {
+        //     const menuHtml = `
+        //         <div class="dropdown-menu position-absolute shadow-lg" style="display: block; z-index: 1000;" id="tableContextMenu">
+        //             <a class="dropdown-item" href="#" id="addRowAbove">➕ Добавить строку выше</a>
+        //             <a class="dropdown-item" href="#" id="addRowBelow">➕ Добавить строку ниже</a>
+        //             <a class="dropdown-item" href="#" id="addColumnLeft">➕ Добавить столбец слева</a>
+        //             <a class="dropdown-item" href="#" id="addColumnRight">➕ Добавить столбец справа</a>
+        //             <div class="dropdown-divider"></div>
+        //             <a class="dropdown-item" href="#" id="deleteRow">❌ Удалить строку</a>
+        //             <a class="dropdown-item" href="#" id="deleteColumn">❌ Удалить столбец</a>
+        //         </div>
+        //     `;
+
+        //     // Удаляем старое меню таблиц если есть
+        //     const existingMenu = document.getElementById('tableContextMenu');
+        //     if (existingMenu) existingMenu.remove();
+
+        //     // Создаём новое меню
+        //     const tempDiv = document.createElement('div');
+        //     tempDiv.innerHTML = menuHtml;
+        //     document.body.appendChild(tempDiv.firstElementChild);
+
+        //     const menu = document.getElementById('tableContextMenu');
+        //     menu.style.left = x + 'px';
+        //     menu.style.top = y + 'px';
+
+        //     // Проверяем, чтобы меню не выходило за пределы экрана
+        //     const rect = menu.getBoundingClientRect();
+        //     if (rect.right > window.innerWidth) {
+        //         menu.style.left = (x - rect.width) + 'px';
+        //     }
+        //     if (rect.bottom > window.innerHeight) {
+        //         menu.style.top = (y - rect.height) + 'px';
+        //     }
+
+        //     // Обработчики для меню таблиц
+        //     document.getElementById('addRowAbove').addEventListener('click', (e) => {
+        //         e.preventDefault();
+        //         addTableRow(tableContext, 'above');
+        //         menu.remove();
+        //     });
+
+        //     document.getElementById('addRowBelow').addEventListener('click', (e) => {
+        //         e.preventDefault();
+        //         addTableRow(tableContext, 'below');
+        //         menu.remove();
+        //     });
+
+        //     document.getElementById('addColumnLeft').addEventListener('click', (e) => {
+        //         e.preventDefault();
+        //         addTableColumn(tableContext, 'left');
+        //         menu.remove();
+        //     });
+
+        //     document.getElementById('addColumnRight').addEventListener('click', (e) => {
+        //         e.preventDefault();
+        //         addTableColumn(tableContext, 'right');
+        //         menu.remove();
+        //     });
+
+        //     document.getElementById('deleteRow').addEventListener('click', (e) => {
+        //         e.preventDefault();
+        //         deleteTableRow(tableContext);
+        //         menu.remove();
+        //     });
+
+        //     document.getElementById('deleteColumn').addEventListener('click', (e) => {
+        //         e.preventDefault();
+        //         deleteTableColumn(tableContext);
+        //         menu.remove();
+        //     });
+
+        //     // Закрытие при клике вне меню
+        //     setTimeout(() => {
+        //         document.addEventListener('click', function closeMenu(event) {
+        //             if (!menu.contains(event.target)) {
+        //                 menu.remove();
+        //                 document.removeEventListener('click', closeMenu);
+        //             }
+        //         }, { once: true });
+        //     }, 100);
+        // }
+
+        // Добавление строки в таблицу
+        // function addTableRow(tableContext, position) {
+        //     const lines = tableContext.lines;
+        //     const separatorIndex = lines.findIndex(l => l.includes('|') && l.includes('---'));
+
+        //     let newRow = '|';
+        //     const colCount = (lines[separatorIndex].match(/\|/g) || []).length - 1;
+        //     for (let c = 0; c < colCount; c++) {
+        //         newRow += ' Новая ячейка |';
+        //     }
+        //     newRow += '\n';
+
+        //     let insertIndex;
+        //     if (position === 'above' && tableContext.lineIndex < separatorIndex) {
+        //         insertIndex = separatorIndex;
+        //     } else if (position === 'above') {
+        //         insertIndex = tableContext.lineIndex;
+        //     } else {
+        //         insertIndex = tableContext.lineIndex + 1;
+        //     }
+
+        //     lines.splice(insertIndex, 0, newRow.trim());
+        //     editor.innerText = lines.join('\n');
+        //     updateHiddenField();
+        //     updatePreview();
+        // }
+
+        // // Добавление столбца в таблицу
+        // function addTableColumn(
+        //     tableContext,
+        //     position
+        // ){
+        //     const lines =
+        //         [...tableContext.lines];
+        //     for(
+        //         let i=0;
+        //         i<lines.length;
+        //         i++
+        //     ){
+        //         const line =
+        //             lines[i];
+        //         if(
+        //             !line.trim()
+        //             .startsWith('|')
+        //         )
+        //             continue;
+        //         const cells =
+        //             line
+        //             .split('|')
+        //             .slice(1,-1);
+        //         const value =
+        //             i===1
+        //             ? ' --- '
+        //             : ' Новый ';
+
+        //         if(
+        //             position==='left'
+        //         )
+        //             cells.unshift(value);
+        //         else
+        //             cells.push(value);
+
+        //         lines[i]=
+        //             '|'
+        //             +cells.join('|')
+        //             +'|';
+        //     }
+
+        //     editor.innerText=
+        //         lines.join('\n');
+
+        //     updateHiddenField();
+        //     updatePreview();
+
+        // }
+
+        // // Удаление строки из таблицы
+        // function deleteTableRow(tableContext) {
+        //     const lines = tableContext.lines;
+        //     const separatorIndex = lines.findIndex(l => l.includes('|') && l.includes('---'));
+
+        //     // Не удаляем заголовок или разделитель
+        //     if (tableContext.lineIndex <= separatorIndex) {
+        //         alert('Нельзя удалить строку заголовка!');
+        //         return;
+        //     }
+
+        //     // Оставляем минимум одну строку данных
+        //     const dataRows = lines.filter((l, i) => i > separatorIndex && l.trim().startsWith('|'));
+        //     if (dataRows.length <= 1) {
+        //         alert('В таблице должна быть хотя бы одна строка данных!');
+        //         return;
+        //     }
+
+        //     lines.splice(tableContext.lineIndex, 1);
+        //     tableContext.node.textContent = lines.join('\\n');
+        //     updateHiddenField();
+        //     updatePreview();
+        // }
+
+        // // Удаление столбца из таблицы
+        // function deleteTableColumn(
+        //     tableContext
+        // ){
+        //     const lines =
+        //         [...tableContext.lines];
+        //     for(
+        //         let i=0;
+        //         i<lines.length;
+        //         i++
+        //     ){
+        //         if(
+        //             !lines[i]
+        //             .trim()
+        //             .startsWith('|')
+        //         )
+        //             continue;
+
+        //         let cells =
+        //             lines[i]
+        //             .split('|')
+        //             .slice(1,-1);
+
+        //         if(
+        //             cells.length<=2
+        //         ){
+        //             alert(
+        //             'Минимум 2 столбца'
+        //             );
+        //             return;
+        //         }
+        //         cells.pop();
+        //         lines[i]=
+        //             '|'
+        //             +cells.join('|')
+        //             +'|';
+        //     }
+        //     editor.innerText=
+        //         lines.join('\n');
+
+        //     updateHiddenField();
+        //     updatePreview();
+        // }
+
         // Показать контекстное меню
         function showContextMenu(x, y) {
             contextMenu.style.display = 'block';
@@ -845,14 +1958,19 @@
 
         // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', function() {
-            if (!editor.textContent.trim()) {
-                editor.innerHTML = '';
+            const initialContent = editor.textContent?.trim();
+            if (initialContent && initialContent.trim() && initialContent !== '<br>') {
+                updatePreview();
             }
             updateHiddenField();
+
+            // Инициализация интеграции визуального редактора таблиц
             setTimeout(() => {
                 initTableEditorIntegration();
             }, 500);
         });
+
+        
 
         // Callback при изменении таблицы (оставлен для совместимости)
         function onTableChange(table) {

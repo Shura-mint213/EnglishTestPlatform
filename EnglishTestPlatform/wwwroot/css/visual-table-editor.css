@@ -5,41 +5,30 @@
     position: relative;
     border-collapse: collapse;
     width: 100%;
-    margin: 10px 0;
     background: white;
 }
 
-/* Ячейки таблицы */
-.visual-table-enhanced th,
-.visual-table-enhanced td {
-    border: 1px solid #dee2e6;
-    padding: 8px 12px;
-    text-align: left;
-    vertical-align: top;
-    min-width: 50px;
-    transition: background-color 0.2s, box-shadow 0.2s;
-}
 
-/* Заголовки */
-.visual-table-enhanced th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-    color: #495057;
-}
+    /* Заголовки */
+    .visual-table-enhanced th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+    }
 
-/* Активная ячейка */
-.visual-table-enhanced td.cell-focused,
-.visual-table-enhanced th.cell-focused {
-    background-color: #e3f2fd;
-    box-shadow: inset 0 0 0 2px #007bff;
-    outline: none;
-}
+        /* Активная ячейка */
+        .visual-table-enhanced td.cell-focused,
+        .visual-table-enhanced th.cell-focused {
+            background-color: #e3f2fd;
+            box-shadow: inset 0 0 0 2px #007bff;
+            outline: none;
+        }
 
-/* Hover эффект для ячеек */
-.visual-table-enhanced tr:hover td,
-.visual-table-enhanced tr:hover th {
-    background-color: #f1f3f5;
-}
+    /* Hover эффект для ячеек */
+    .visual-table-enhanced tr:hover td,
+    .visual-table-enhanced tr:hover th {
+        background-color: #f1f3f5;
+    }
 
 /* Контейнеры для плюсиков */
 .column-adder-container,
@@ -47,40 +36,40 @@
     pointer-events: none; /* Чтобы не мешали, пока плюсики невидимы */
 }
 
-.column-adder-container > *,
-.row-adder-container > * {
-    pointer-events: auto; /* Включаем события для самих плюсиков */
-}
+    .column-adder-container > *,
+    .row-adder-container > * {
+        pointer-events: auto; /* Включаем события для самих плюсиков */
+    }
 
 /* Плюсики для столбцов */
 .column-adder {
     position: relative;
 }
 
-.column-adder span {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transform: scale(0.8);
-    transition: transform 0.2s, opacity 0.2s;
-}
+    .column-adder span {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transform: scale(0.8);
+        transition: transform 0.2s, opacity 0.2s;
+    }
 
-.column-adder:hover span {
-    transform: scale(1.1);
-}
+    .column-adder:hover span {
+        transform: scale(1.1);
+    }
 
 /* Плюсики для строк */
 .row-adder {
     position: relative;
 }
 
-.row-adder span {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transform: scale(0.8);
-    transition: transform 0.2s, opacity 0.2s;
-}
+    .row-adder span {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transform: scale(0.8);
+        transition: transform 0.2s, opacity 0.2s;
+    }
 
-.row-adder:hover span {
-    transform: scale(1.1);
-}
+    .row-adder:hover span {
+        transform: scale(1.1);
+    }
 
 /* Стили для режима редактирования */
 .markdown-editor table {
@@ -89,28 +78,28 @@
     margin: 10px 0;
 }
 
-.markdown-editor table th,
-.markdown-editor table td {
-    border: 1px solid #dee2e6;
-    padding: 8px;
-    min-width: 80px;
-}
+    .markdown-editor table th,
+    .markdown-editor table td {
+        border: 1px solid #dee2e6;
+        padding: 8px;
+        min-width: 80px;
+    }
 
-.markdown-editor table th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-}
+    .markdown-editor table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
 
 /* Адаптивность */
 @media (max-width: 768px) {
     .visual-table-enhanced {
         font-size: 14px;
     }
-    
-    .visual-table-enhanced th,
-    .visual-table-enhanced td {
-        padding: 6px 8px;
-    }
+
+        .visual-table-enhanced th,
+        .visual-table-enhanced td {
+            padding: 6px 8px;
+        }
 }
 
 /* Печать */
@@ -119,7 +108,7 @@
     .row-adder-container {
         display: none !important;
     }
-    
+
     .visual-table-enhanced th,
     .visual-table-enhanced td {
         border: 1px solid #000;
@@ -132,18 +121,84 @@
     color: #e0e0e0;
 }
 
-[data-theme="dark"] .visual-table-enhanced th,
-[data-theme="dark"] .visual-table-enhanced td {
-    border-color: #444;
+    [data-theme="dark"] .visual-table-enhanced th,
+    [data-theme="dark"] .visual-table-enhanced td {
+        border-color: #444;
+    }
+
+    [data-theme="dark"] .visual-table-enhanced th {
+        background-color: #2d2d2d;
+        color: #fff;
+    }
+
+        [data-theme="dark"] .visual-table-enhanced td.cell-focused,
+        [data-theme="dark"] .visual-table-enhanced th.cell-focused {
+            background-color: #1a3a5c;
+            box-shadow: inset 0 0 0 2px #4dabf7;
+        }
+
+.visual-table {
+    position: relative;
 }
 
-[data-theme="dark"] .visual-table-enhanced th {
-    background-color: #2d2d2d;
-    color: #fff;
+.table-add-col,
+.table-add-row {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: #667eea;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-[data-theme="dark"] .visual-table-enhanced td.cell-focused,
-[data-theme="dark"] .visual-table-enhanced th.cell-focused {
-    background-color: #1a3a5c;
-    box-shadow: inset 0 0 0 2px #4dabf7;
+.visual-table,
+.visual-table-enhanced {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
 }
+    .visual-table td,
+    .visual-table tr {
+        height: 40px !important;
+        min-height: 40px !important;
+    }
+
+    .visual-table td,
+    .visual-table th,
+    .visual-table-enhanced td,
+    .visual-table-enhanced th {
+        min-width: 120px;
+        vertical-align: middle;
+        cursor: text;
+        box-sizing: border-box;
+    }
+
+    /* Ячейки таблицы */
+    .visual-table-enhanced th,
+    .visual-table-enhanced td {
+        line-height: 40px;
+        height: 40px;
+        min-height: 40px;
+        padding: 0 12px;
+        border: 1px solid #dee2e6;
+        text-align: left;
+        transition: background-color 0.2s, box-shadow 0.2s;
+    }
+
+        .visual-table td:focus,
+        .visual-table th:focus,
+        .visual-table-enhanced td:focus,
+        .visual-table-enhanced th:focus {
+            outline: 2px solid #4f46e5;
+        }
+
+        /* Заполняем пустые ячейки невидимым символом, чтобы высота сохранялась */
+        .visual-table-enhanced td:empty::before,
+        .visual-table-enhanced th:empty::before {
+            content: "\00a0"; /* неразрывный пробел */
+            white-space: pre;
+        }

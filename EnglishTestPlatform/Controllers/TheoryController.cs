@@ -50,7 +50,12 @@ namespace EnglishTestPlatform.Controllers
                 return Content("Файл теории не найден.");
 
             var markdown = await System.IO.File.ReadAllTextAsync(filePath);
-            var html = Markdown.ToHtml(markdown, new MarkdownPipelineBuilder().UseAdvancedExtensions().Build());
+            var html = Markdown.ToHtml(markdown,
+                new MarkdownPipelineBuilder()
+                    .UseAdvancedExtensions()
+                    .UsePipeTables() 
+                    .UseBootstrap()
+                    .Build());
 
             ViewBag.HtmlContent = html;
             ViewBag.RelatedTests = theory.TheoryTestRelations.Select(r => r.Test).ToList();

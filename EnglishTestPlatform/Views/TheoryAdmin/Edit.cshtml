@@ -132,7 +132,7 @@
                                     <a class="dropdown-item" href="#" data-command="image">🖼️ Вставить изображение <small class="text-muted">(Ctrl+Shift+I)</small></a>
                                 </div>
                                 <!-- Редактируемая область с contenteditable -->
-                                <div id="markdownEditor" class="form-control markdown-editor" contenteditable="true" 
+                                <div id="markdownEditor" class="form-control markdown-editor" contenteditable="true"
                                      style="min-height: 400px; max-height: 600px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.6;"
                                      placeholder="# Заголовок&#10;&#10;Ваш текст в формате Markdown...">@Model.MarkdownContent</div>
                                 <!-- Скрытое поле для отправки данных -->
@@ -337,36 +337,56 @@
 
         function getEditorMarkdown() {
             let text = '';
-            editor.childNodes.forEach(node => {
+
+            // Проходим по всем дочерним узлам редактора
+            const processNode = (node) => {
                 if (node.nodeType === Node.TEXT_NODE) {
                     text += node.textContent;
                     return;
                 }
-                if (node.nodeName === 'TABLE') {
-                    if (
-                        window.tableEditorIntegration
-                    ) {
-                        text +=
-                            window
-                            .tableEditorIntegration
-                            .visualEditor
-                            .tableToMarkdown(node);
 
-                        text += '\n';
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    // Если это таблица - конвертируем в Markdown
+                    if (node.nodeName === 'TABLE' || node.tagName === 'TABLE') {
+                        if (window.tableEditorIntegration && window.tableEditorIntegration.visualEditor) {
+                            text += window.tableEditorIntegration.visualEditor.tableToMarkdown(node);
+                            text += '\n\n';
+                            return;
+                        }
                     }
-                    return;
-                }
-                const value =
-                    node.innerText ||
-                    node.textContent ||
-                    '';
-                text += value;
-                text += '\n';
-            });
-            return text
-                .replace(/\n{3,}/g, '\n\n');
-        }
 
+                    // Для других элементов получаем текстовое содержимое
+                    if (node.nodeName === 'BR') {
+                        text += '\n';
+                        return;
+                    }
+
+                    if (node.nodeName === 'DIV' || node.nodeName === 'P') {
+                        text += node.innerText || node.textContent || '';
+                        text += '\n\n';
+                        return;
+                    }
+
+                    // Рекурсивно обрабатываем дочерние узлы
+                    if (node.childNodes && node.childNodes.length > 0) {
+                        Array.from(node.childNodes).forEach(child => processNode(child));
+                        // Добавляем перенос строки после блочных элементов
+                        if (['DIV', 'P', 'TABLE', 'UL', 'OL', 'BLOCKQUOTE', 'PRE'].includes(node.nodeName)) {
+                            text += '\n';
+                        }
+                    } else {
+                        text += node.innerText || node.textContent || '';
+                    }
+                }
+            };
+
+            Array.from(editor.childNodes).forEach(node => processNode(node));
+
+            // Очищаем множественные переносы строк
+            return text
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+        }
         // Применение форматирования к выделенному тексту
         function applyCommand(command, value = null) {
             editor.focus();
@@ -676,15 +696,66 @@
             const selectedText = selection.toString().trim();
 
             // Проверяем, находится ли курсор внутри таблицы
-            const tableContext = findTableContext();
+            const target = e.target;
+            const tableContext = findTableContext(target);
 
             if (tableContext) {
                 // Показываем контекстное меню для таблиц
-                showTableContextMenu(e.pageX, e.pageY, tableContext);
+                // tableContext уже содержит { table, rowIndex, cellIndex }
+                if (window.tableEditorIntegration && window.tableEditorIntegration.visualEditor) {
+                    window.tableEditorIntegration.visualEditor.showTableContextMenu(
+                        e,
+                        tableContext.table,
+                        tableContext.rowIndex,
+                        tableContext.cellIndex
+                    );
+                }
             } else if (selectedText.length > 0) {
                 showContextMenu(e.pageX, e.pageY);
             }
         });
+
+        // Функция для поиска контекста таблицы
+        function findTableContext(target) {
+            // Проверяем, является ли target ячейкой таблицы
+            let cell = target;
+
+            // Поднимаемся по DOM, пока не найдем td/th или table
+            while (cell && cell !== editor) {
+                if (cell.tagName === 'TD' || cell.tagName === 'TH') {
+                    // Нашли ячейку таблицы
+                    const row = cell.parentElement;
+                    const table = row.closest('table');
+
+                    if (table) {
+                        const rows = Array.from(table.querySelectorAll('tr'));
+                        const rowIndex = rows.indexOf(row);
+                        const cells = Array.from(row.querySelectorAll('td, th'));
+                        const cellIndex = cells.indexOf(cell);
+
+                        return {
+                            table: table,
+                            rowIndex: rowIndex,
+                            cellIndex: cellIndex
+                        };
+                    }
+                }
+
+                if (cell.tagName === 'TABLE') {
+                    // Кликнули прямо на таблицу, но не на ячейку
+                    // Возвращаем контекст с нулевыми индексами
+                    return {
+                        table: cell,
+                        rowIndex: 0,
+                        cellIndex: 0
+                    };
+                }
+
+                cell = cell.parentElement;
+            }
+
+            return null;
+        }
 
         // Показать контекстное меню
         function showContextMenu(x, y) {
@@ -853,8 +924,8 @@
         });
 
         // Обработка отправки формы
-        document.getElementById('createForm').addEventListener('submit', function(e) {
-            const activeTab = document.querySelector('#createMethodTabs .nav-link.active').id;
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            const activeTab = document.querySelector('#editMethodTabs .nav-link.active').id;
 
             if (activeTab === 'editor-tab') {
                 // Получаем контент через интеграцию таблиц для корректной конвертации
@@ -863,13 +934,10 @@
                 let markdownContent;
 
                 if (window.tableEditorIntegration) {
-                    markdownContent =
-                        window.tableEditorIntegration
-                        .getContent();
+                    markdownContent = window.tableEditorIntegration.getContent();
                 }
                 else {
-                    markdownContent =
-                        hiddenField.value;
+                    markdownContent = hiddenField.value;
                 }
 
                 if (!markdownContent.trim()) {
@@ -887,8 +955,16 @@
                 editor.innerHTML = '';
             }
             updateHiddenField();
+
+            // Инициализируем редактор таблиц с задержкой
             setTimeout(() => {
                 initTableEditorIntegration();
+
+                // Принудительно конвертируем существующие Markdown таблицы
+                if (window.tableEditorIntegration) {
+                    window.tableEditorIntegration.convertExistingMarkdownToHtml();
+                    updatePreview();
+                }
             }, 500);
         });
 
@@ -915,44 +991,70 @@
             }
 
             init() {
-                // Конвертируем Markdown таблицы в HTML при загрузке
-                this.convertMarkdownTablesToHTML();
 
                 // Инициализируем визуальный редактор
                 this.visualEditor = new VisualTableEditor(this.editor.id, () => {
                     this.onTableModified();
                 });
-                let typingTimer;
-                editor.addEventListener(
-                    'input',
-                    () => {
-                        clearTimeout(
-                            typingTimer
-                        );
-                        updateHiddenField();
-                        typingTimer =
-                            setTimeout(
-                                () => {
-                                    updatePreview();
-                                },
-                                300
-                            );
+            }
+
+            convertExistingMarkdownToHtml() {
+                if (this.editor && this.editor.innerHTML) {
+                    // Сохраняем оригинальный контент
+                    const originalContent = this.editor.innerHTML;
+
+                    // Создаем временный div для парсинга
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = originalContent;
+
+                    // Проверяем, есть ли текстовые Markdown таблицы
+                    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+
+                    // Регулярное выражение для поиска Markdown таблиц в тексте
+                    const markdownTableRegex = /(\|[^\n]*\|\n\|[-:\|\s]+\|\n(\|[^\n]*\|\n?)*)/g;
+
+                    if (markdownTableRegex.test(textContent)) {
+                        // Конвертируем только если нашли таблицы
+                        this.convertMarkdownTablesToHTML();
                     }
-                );
+
+                    this.updateHiddenField();
+                }
             }
 
             // Конвертация Markdown таблиц в HTML для визуального редактирования
             convertMarkdownTablesToHTML() {
-                const content = this.editor.innerHTML;
-                const markdownTableRegex = /(\|[\s\S]+?\|)(?=\s*\n\s*\|[-\s|]+)/g;
+                if (!this.editor) return;
+
+                // Получаем текстовое содержимое редактора
+                const textContent = this.editor.innerText;
+
+                // Регулярное выражение для поиска Markdown таблиц
+                const markdownTableRegex = /(\|[^\n]*\|\n\|[-:\|\s]+\|\n(\|[^\n]*\|\n?)*)/g;
+
+                let hasChanges = false;
+                let newContent = this.editor.innerHTML;
 
                 let match;
-                while ((match = markdownTableRegex.exec(content)) !== null) {
-                    const markdownTable = match[0];
+                while ((match = markdownTableRegex.exec(textContent)) !== null) {
+                    const markdownTable = match[0].trim();
                     const htmlTable = this.markdownTableToHTML(markdownTable);
+
                     if (htmlTable) {
-                        this.editor.innerHTML = this.editor.innerHTML.replace(markdownTable, htmlTable);
+                        // Заменяем текстовую таблицу на HTML
+                        newContent = newContent.replace(match[0], htmlTable);
+                        hasChanges = true;
                     }
+                }
+
+                if (hasChanges) {
+                    this.editor.innerHTML = newContent;
+                    // Пересканируем таблицы после конвертации
+                    setTimeout(() => {
+                        if (this.visualEditor) {
+                            this.visualEditor.scanTables();
+                        }
+                    }, 100);
                 }
             }
 
@@ -1072,11 +1174,10 @@
 
             // Установить контент
             setContent(content) {
-                this.editor.innerHTML = content;
-                this.convertMarkdownTablesToHTML();
-                if (this.visualEditor) {
-                    this.visualEditor.scanTables();
-                }
+                const html =
+                    this.convertMarkdownTextToHtml(content);
+                this.editor.innerHTML = html;
+                this.visualEditor?.scanTables();
             }
         }
 

@@ -638,15 +638,66 @@
             const selectedText = selection.toString().trim();
 
             // Проверяем, находится ли курсор внутри таблицы
-            const tableContext = findTableContext();
+            const target = e.target;
+            const tableContext = findTableContext(target);
 
             if (tableContext) {
                 // Показываем контекстное меню для таблиц
-                showTableContextMenu(e.pageX, e.pageY, tableContext);
+                // tableContext уже содержит { table, rowIndex, cellIndex }
+                if (window.tableEditorIntegration && window.tableEditorIntegration.visualEditor) {
+                    window.tableEditorIntegration.visualEditor.showTableContextMenu(
+                        e,
+                        tableContext.table,
+                        tableContext.rowIndex,
+                        tableContext.cellIndex
+                    );
+                }
             } else if (selectedText.length > 0) {
                 showContextMenu(e.pageX, e.pageY);
             }
         });
+
+        // Функция для поиска контекста таблицы
+        function findTableContext(target) {
+            // Проверяем, является ли target ячейкой таблицы
+            let cell = target;
+
+            // Поднимаемся по DOM, пока не найдем td/th или table
+            while (cell && cell !== editor) {
+                if (cell.tagName === 'TD' || cell.tagName === 'TH') {
+                    // Нашли ячейку таблицы
+                    const row = cell.parentElement;
+                    const table = row.closest('table');
+
+                    if (table) {
+                        const rows = Array.from(table.querySelectorAll('tr'));
+                        const rowIndex = rows.indexOf(row);
+                        const cells = Array.from(row.querySelectorAll('td, th'));
+                        const cellIndex = cells.indexOf(cell);
+
+                        return {
+                            table: table,
+                            rowIndex: rowIndex,
+                            cellIndex: cellIndex
+                        };
+                    }
+                }
+
+                if (cell.tagName === 'TABLE') {
+                    // Кликнули прямо на таблицу, но не на ячейку
+                    // Возвращаем контекст с нулевыми индексами
+                    return {
+                        table: cell,
+                        rowIndex: 0,
+                        cellIndex: 0
+                    };
+                }
+
+                cell = cell.parentElement;
+            }
+
+            return null;
+        }
 
         // Показать контекстное меню
         function showContextMenu(x, y) {

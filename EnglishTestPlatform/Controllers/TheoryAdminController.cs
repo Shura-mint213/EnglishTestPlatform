@@ -60,7 +60,9 @@ namespace EnglishTestPlatform.Controllers
             try
             {
                 var pipeline = new MarkdownPipelineBuilder()
-                    .UseAdvancedExtensions()
+                    .UseAdvancedExtensions() 
+                    .UsePipeTables()
+                    .UseBootstrap()
                     .Build();
 
                 var html = Markdown.ToHtml(markdownContent, pipeline);
